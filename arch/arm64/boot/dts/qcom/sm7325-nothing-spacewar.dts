@@ -262,7 +262,7 @@
 
 		gpio = <&tlmm 49 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
-		regulator-always-on; // FIXME!
+		regulator-always-on;
 
 		vin-supply = <&vreg_bob>;
 	};
@@ -279,7 +279,6 @@
 
 		gpio = <&tlmm 43 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
-		regulator-always-on; // FIXME!
 
 		vin-supply = <&vreg_bob>;
 	};
@@ -296,7 +295,6 @@
 
 		gpio = <&tlmm 35 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
-		regulator-always-on; // FIXME!
 
 		vin-supply = <&vreg_s8b_1p256>;
 	};
@@ -330,7 +328,6 @@
 
 		gpio = <&tlmm 68 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
-		regulator-always-on; // FIXME!
 
 		vin-supply = <&vreg_bob>;
 	};
@@ -347,7 +344,6 @@
 
 		gpio = <&tlmm 50 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
-		regulator-always-on; // FIXME!
 
 		vin-supply = <&vreg_s8b_1p256>;
 	};
@@ -381,7 +377,6 @@
 
 		gpio = <&tlmm 79 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
-		regulator-always-on; // FIXME!
 
 		vin-supply = <&vreg_bob>;
 	};
@@ -432,7 +427,6 @@
 
 		gpio = <&tlmm 108 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
-		regulator-always-on; // FIXME!
 
 		vin-supply = <&vreg_s8b_1p256>;
 	};
@@ -1042,9 +1036,9 @@
 		compatible = "sony,imx766";
 		reg = <0x10>;
 
-		avdd-supply = <&vreg_camw_vana_2p8>;
-		dovdd-supply = <&vreg_cam_vio_1p8>;
-		dvdd-supply = <&vreg_camw_vdig_1p2>;
+		vdig-supply = <&vreg_camw_vdig_1p2>;
+		vana-supply = <&vreg_camw_vana_2p8>;
+		vif-supply = <&vreg_cam_vio_1p8>;
 
 		clocks = <&camcc CAM_CC_MCLK3_CLK>;
 		clock-frequency = <19200000>;
