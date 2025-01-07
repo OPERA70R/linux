@@ -2192,6 +2192,8 @@ static const struct spi_device_id fts_ts_id[] = {
     {FTS_DRIVER_NAME, 0},
     {},
 };
+MODULE_DEVICE_TABLE(spi, fts_ts_id);
+
 static const struct of_device_id fts_dt_match[] = {
     {.compatible = "focaltech,fts_ts", },
     {},
@@ -2211,27 +2213,7 @@ static struct spi_driver fts_ts_driver = {
     },
     .id_table = fts_ts_id,
 };
-
-static int __init fts_ts_init(void)
-{
-    int ret = 0;
-
-    FTS_FUNC_ENTER();
-    ret = spi_register_driver(&fts_ts_driver);
-    if ( ret != 0 ) {
-        FTS_ERROR("Focaltech touch screen driver init failed!");
-    }
-    FTS_FUNC_EXIT();
-    return ret;
-}
-
-static void __exit fts_ts_exit(void)
-{
-    spi_unregister_driver(&fts_ts_driver);
-}
-
-late_initcall(fts_ts_init);
-module_exit(fts_ts_exit);
+module_spi_driver(fts_ts_driver);
 
 MODULE_AUTHOR("FocalTech Driver Team");
 MODULE_DESCRIPTION("FocalTech Touchscreen Driver");
