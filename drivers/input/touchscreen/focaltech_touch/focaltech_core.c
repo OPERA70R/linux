@@ -66,7 +66,7 @@
 #define INTERVAL_READ_REG                   200  /* unit:ms */
 #define TIMEOUT_READ_REG                    1000 /* unit:ms */
 #if FTS_POWER_SOURCE_CUST_EN
-#define FTS_VTG_MIN_UV                      3300000
+#define FTS_VTG_MIN_UV                      2800000
 #define FTS_VTG_MAX_UV                      3300000
 #define FTS_SPI_VTG_MIN_UV                  1800000
 #define FTS_SPI_VTG_MAX_UV                  1800000
@@ -88,9 +88,7 @@ static int drm_check_count = 0;
 #endif
 
 #if FTS_POWER_SOURCE_CUST_EN
-#if pinctrl_select_state
 #include <linux/pinctrl/consumer.h>
-#endif
 #endif
 
 
@@ -1356,12 +1354,12 @@ static int fts_power_source_suspend(struct fts_ts_data *ts_data)
 #if FTS_PINCTRL_EN
     fts_pinctrl_select_suspend(ts_data);
 #endif
-    /*
+
     ret = fts_power_source_ctrl(ts_data, DISABLE);
     if (ret < 0) {
         FTS_ERROR("power off fail, ret=%d", ret);
     }
-    */
+
     return ret;
 }
 
@@ -1372,12 +1370,12 @@ static int fts_power_source_resume(struct fts_ts_data *ts_data)
 #if FTS_PINCTRL_EN
     fts_pinctrl_select_normal(ts_data);
 #endif
-    /*
+
     ret = fts_power_source_ctrl(ts_data, ENABLE);
     if (ret < 0) {
         FTS_ERROR("power on fail, ret=%d", ret);
     }
-    */
+
     return ret;
 }
 #endif /* FTS_POWER_SOURCE_CUST_EN */
@@ -2107,7 +2105,7 @@ static int fts_ts_resume(struct device *dev)
     return 0;
 }
 
-#if 0//defined(CONFIG_PM) && FTS_PATCH_COMERR_PM
+#if defined(CONFIG_PM) && FTS_PATCH_COMERR_PM
 static int fts_pm_suspend(struct device *dev)
 {
     struct fts_ts_data *ts_data = dev_get_drvdata(dev);
@@ -2206,7 +2204,7 @@ static struct spi_driver fts_ts_driver = {
     .driver = {
         .name = FTS_DRIVER_NAME,
         .owner = THIS_MODULE,
-#if 0//defined(CONFIG_PM) && FTS_PATCH_COMERR_PM
+#if defined(CONFIG_PM) && FTS_PATCH_COMERR_PM
         .pm = &fts_dev_pm_ops,
 #endif
         .of_match_table = of_match_ptr(fts_dt_match),
