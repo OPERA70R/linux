@@ -719,10 +719,7 @@
 
 		vdd-l1-l12-supply = <&vreg_s1b_1p856>;
 		vdd-l2-l8-supply = <&vreg_s1b_1p856>;
-		/*
-		 * Doesn't work with always-on TS regulators :/
-		 * vdd-l3-l4-l5-l7-l13-supply = <&vreg_bob>;
-		 */
+		vdd-l3-l4-l5-l7-l13-supply = <&vreg_bob>; 
 		vdd-l6-l9-l11-supply = <&vreg_bob>;
 		vdd-l10-supply = <&vreg_s7b_0p952>;
 
