@@ -1234,6 +1234,10 @@
 	};
 };
 
+&pm8350b_vib {
+	status = "okay";
+};
+
 &pm8350c_flash {
 	status = "okay";
 
