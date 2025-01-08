@@ -45,7 +45,7 @@
 		};
 
 		pm8350b_vib: vibrator@f000 {
-			compatible = "qcom,pm8350b-vib", "qcom,pmi632-vib";
+			compatible = "qcom,pm3725b-vib", "qcom,pmi632-vib";
 			reg = <0xf000 0xf100 0xf200>;
 			status = "disabled";
 		};
