@@ -281,6 +281,7 @@
 		enable-active-high;
 
 		vin-supply = <&vreg_bob>;
+		regulator-always-on;
 	};
 
 	vreg_camf_vdig_1p2: camf-vdig {
@@ -944,13 +945,12 @@
 
 &cci0_i2c0 {
 	camera@1a {
-		compatible = "mipi-ccs-1.0", // imx471
-			     "mipi-ccs";
+		compatible = "sony,imx471";
 		reg = <0x1a>;
 
-		vio-supply = <&vreg_cam_vio_1p8>;
-		vcore-supply = <&vreg_camf_vdig_1p2>;
-		vana-supply = <&vreg_camf_vana_2p8>;
+		vddio-supply = <&vreg_cam_vio_1p8>;
+		vddd-supply = <&vreg_camf_vdig_1p2>;
+		vdda-supply = <&vreg_camf_vana_2p8>;
 
 		clocks = <&camcc CAM_CC_MCLK0_CLK>;
 		clock-frequency = <19200000>;
