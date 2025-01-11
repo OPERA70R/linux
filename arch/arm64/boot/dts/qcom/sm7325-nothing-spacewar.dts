@@ -960,7 +960,7 @@
 		pinctrl-names = "default";
 
 		orientation = <0>; // Front facing
-		rotation = <90>;
+		rotation = <270>;
 
 		port {
 			camera_imx471_ep: endpoint {
