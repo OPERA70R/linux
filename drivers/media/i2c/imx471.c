@@ -163,14 +163,11 @@ static const s64 link_freq[] = {
 };
 
 /* Sensor mode registers */
-static const struct imx471_reg mode_1920x1440_30fps_regs[] = {
-	//External Clock Setting
-	{0x0136, 0x1A},
+static const struct imx471_reg mode_2304x1728_regs[] = {
+	{0x0136, 0x18},
 	{0x0137, 0x00},
-	//Register version
-	{0x3C7E, 0x07},
+	{0x3C7E, 0x02},
 	{0x3C7F, 0x05},
-	//Global Setting
 	{0x3E35, 0x00},
 	{0x3E36, 0x00},
 	{0x3E37, 0x00},
@@ -223,94 +220,94 @@ static const struct imx471_reg mode_1920x1440_30fps_regs[] = {
 	{0x9317, 0x19},
 	{0xB046, 0x01},
 	{0xB048, 0x01},
-	// End of Global Part
+	{0xAA06, 0x3F},
+	{0xAA07, 0x05},
+	{0xAA08, 0x04},
+	{0xAA12, 0x3F},
+	{0xAA13, 0x04},
+	{0xAA14, 0x03},
+	{0xAB55, 0x02},
+	{0xAB57, 0x01},
+	{0xAB59, 0x01},
+	{0xABB4, 0x00},
+	{0xABB5, 0x01},
+	{0xABB6, 0x00},
+	{0xABB7, 0x01},
+	{0xABB8, 0x00},
+	{0xABB9, 0x01},
 
-	//MIPI output setting
 	{0x0112, 0x0A},
 	{0x0113, 0x0A},
 	{0x0114, 0x03},
-	//Line Length PCK Setting
-	{0x0342, 0x14},
+	{0x0342, 0x0A},
 	{0x0343, 0x00},
-	//Frame Length Lines Setting
-	{0x0340, 0x05},
-	{0x0341, 0xF2},
-	//ROI Setting
+	{0x0340, 0x06},
+	{0x0341, 0xF6},
 	{0x0344, 0x00},
 	{0x0345, 0x00},
-	{0x0346, 0x01},
-	{0x0347, 0x34},
+	{0x0346, 0x00},
+	{0x0347, 0x14},
 	{0x0348, 0x12},
 	{0x0349, 0x2F},
-	{0x034A, 0x0C},
-	{0x034B, 0x73},
-	//Mode Setting
+	{0x034A, 0x0D},
+	{0x034B, 0x93},
 	{0x0381, 0x01},
 	{0x0383, 0x01},
 	{0x0385, 0x01},
 	{0x0387, 0x01},
 	{0x0900, 0x01},
 	{0x0901, 0x22},
-	{0x0902, 0x08},
+	{0x0902, 0x09},
 	{0x3F4C, 0x81},
 	{0x3F4D, 0x81},
-	//Digital Crop & Scaling
 	{0x0408, 0x00},
-	{0x0409, 0xCC},
+	{0x0409, 0x0C},
 	{0x040A, 0x00},
 	{0x040B, 0x00},
-	{0x040C, 0x07},
-	{0x040D, 0x80},
-	{0x040E, 0x05},
-	{0x040F, 0xA0},
-	//Output Size Setting
-	{0x034C, 0x07},
-	{0x034D, 0x80},
-	{0x034E, 0x05},
-	{0x034F, 0xA0},
-	//Clock Setting
+	{0x040C, 0x09},
+	{0x040D, 0x00},
+	{0x040E, 0x06},
+	{0x040F, 0xC0},
+	{0x034C, 0x09},
+	{0x034D, 0x00},
+	{0x034E, 0x06},
+	{0x034F, 0xC0},
 	{0x0301, 0x06},
 	{0x0303, 0x04},
 	{0x0305, 0x04},
 	{0x0306, 0x00},
-	{0x0307, 0xD8},
-	{0x030B, 0x01},
-	{0x030D, 0x02},
+	{0x0307, 0x89},
+	{0x030B, 0x02},
+	{0x030D, 0x0F},
 	{0x030E, 0x01},
-	{0x030F, 0x22},
-	{0x0310, 0x00},
-	//Other Setting
-	{0x3F78, 0x02},
-	{0x3F79, 0x3B},
+	{0x030F, 0x93},
+	{0x0310, 0x01},
+	{0x3F78, 0x01},
+	{0x3F79, 0x31},
 	{0x3FFE, 0x00},
-	{0x3FFF, 0x2C},
+	{0x3FFF, 0x8A},
 	{0x5F0A, 0xB6},
-	{0x0B06, 0x00},
-	{0xBCF1, 0x00},
-	//Integration Setting
-	{0x0202, 0x05},
-	{0x0203, 0xE0},
-	//Gain Setting
+	{0x0202, 0x06},
+	{0x0203, 0xE4},
 	{0x0204, 0x00},
 	{0x0205, 0x00},
 	{0x020E, 0x01},
 	{0x020F, 0x00},
 };
-
 /* Supported sensor mode configurations */
 static const struct imx471_mode supported_mode = {
-	.width = 1920,
-	.height = 1440,
-	.hblank = 5120 - 1920, // line_length_pck - width
-	.vblank = 1522 - 1440, // frame_length_lines - height
+	.width = 2304,
+	.height = 1728,
+	.hblank = 2560 - 2304, // line_length_pck - width
+	.vblank = 1782 - 1728, // frame_length_lines - height
 	.vblank_min = 3510 - 3456, // FIXME: need recheck(AI): max(frame_length_lines) - max(height)
 	.vblank_max = 1522 - 648, // FIXME: need recheck(AI): min(frame_length_lines) - min(height)
-	.pclk = 58500000 * 4, // VTPXCK x 4
+	.pclk = 137000000, // VTPXCK x 4
 	.link_freq_idx = 0,
 	.code = MEDIA_BUS_FMT_SGRBG10_1X10,
 	.reg_list = {
-		.num_of_regs = ARRAY_SIZE(mode_1920x1440_30fps_regs),
-		.regs = mode_1920x1440_30fps_regs,
+		.num_of_regs = ARRAY_SIZE(mode_2304x1728_regs),
+		.regs = mode_2304x1728_regs,
 	},
 };
 
@@ -797,43 +794,8 @@ static int imx471_detect(struct imx471 *imx471)
 {
 	int ret;
 	u32 val;
-	u16 reg;
-	u8 newVal;
-	
-	u32 val1;
-	u32 val2;
-	u32 val3;
 
-	reg = 0x0A02;
-	newVal = 0x3F;
-	ret = imx471_write_reg(imx471, reg, 1, newVal);
-	dev_info(imx471->dev, "write 0x%02X to 0x%04X returned %d\n", newVal, reg, ret);
-	if (ret)
-		return ret;
-
-	reg = 0x0A00;
-	newVal = 0x01;
-	ret = imx471_write_reg(imx471, reg, 1, newVal);
-	dev_info(imx471->dev, "write 0x%02X to 0x%04X returned %d\n", newVal, reg, ret);
-	if (ret)
-		return ret;
-
-	reg = 0x0A01;
-	ret = imx471_read_reg(imx471, reg, 1, &val);
-	dev_info(imx471->dev, "read from 0x%04X returned status %d and value 0x%02X\n", reg, ret, val);
-	if (ret)
-		return ret;
-
-	if((val & 0x1) == false)
-		dev_err(imx471->dev, "Read status: not ready - %d\n", val);
-
-	reg = 0x0018;
-	ret = imx471_read_reg(imx471, reg, 1, &val); 
-	dev_info(imx471->dev, "read from 0x%04X returned status %d and value 0x%02X\n", reg, ret, val);
-
-	reg = IMX471_REG_ID;
-	ret = imx471_read_reg(imx471, reg, 2, &val);
-	dev_info(imx471->dev, "read from 0x%04X returned status %d and value 0x%04X\n", reg, ret, val);
+	ret = imx471_read_reg(imx471, IMX471_REG_ID, 2, &val);
 	if (ret)
 		return ret;
 
@@ -842,16 +804,6 @@ static int imx471_detect(struct imx471 *imx471)
 			IMX471_ID, val);
 		return -ENXIO;
 	}
-
-	reg = 0x0002;
-	ret = imx471_read_reg(imx471, reg, 1, &val);
-	dev_info(imx471->dev, "read from 0x%04X returned status %d and value 0x%02X\n", reg, ret, val);
-
-	imx471_read_reg(imx471, 0x300a, 1, &val1);
-	imx471_read_reg(imx471, 0x300b, 1, &val2);
-	imx471_read_reg(imx471, 0x300c, 1, &val3);
-	val = val1 << 16 | val2 << 8 | val3;
-	dev_info(imx471->dev, "Sensor id probably - %d - 0x%x\n", val, val);
 
 	return 0;
 }
@@ -1068,6 +1020,7 @@ static int imx471_init_controls(struct imx471 *imx471)
 
 	/* Initialize exposure and gain */
 	lpfr = mode->vblank + mode->height;
+
 	imx471->exp_ctrl = v4l2_ctrl_new_std(ctrl_hdlr,
 					     &imx471_ctrl_ops,
 					     V4L2_CID_EXPOSURE,
