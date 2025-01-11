@@ -972,8 +972,8 @@
 	};
 
 	eeprom@52 {
-		compatible = "giantec,gt24p128f",
-			     "atmel,24c128";
+		compatible = "puya,p24c64f",
+			     "atmel,24c64";
 		reg = <0x52>;
 		vcc-supply = <&vreg_cam_vio_1p8>;
 		read-only;
@@ -1016,7 +1016,7 @@
 	};
 
 	eeprom@51 {
-		compatible = "giantec,gt24p128f",
+		compatible = "giantec,gt24p128e",
 			     "atmel,24c128";
 		reg = <0x51>;
 		vcc-supply = <&vreg_cam_vio_1p8>;
@@ -1056,7 +1056,7 @@
 	};
 
 	eeprom@50 {
-		compatible = "giantec,gt24p128f",
+		compatible = "giantec,gt24p128e",
 			     "atmel,24c128";
 		reg = <0x50>;
 		vcc-supply = <&vreg_cam_vio_1p8>;
