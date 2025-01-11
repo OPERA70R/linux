@@ -381,40 +381,6 @@
 		vin-supply = <&vreg_bob>;
 	};
 
-	vreg_camw_vcus_1p1: camw-vcus {
-		compatible = "regulator-fixed";
-		regulator-name = "vreg_camw_vcus_1p1";
-
-		regulator-min-microvolt = <1100000>;
-		regulator-max-microvolt = <1100000>;
-
-		/* Time required for enabling the device */
-		regulator-enable-ramp-delay = <10>;
-
-		gpio = <&tlmm 72 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
-		regulator-always-on; // FIXME!
-
-		vin-supply = <&vreg_bob>;
-	};
-
-	vreg_camw_vcus2_1p1: camw-vcus2 {
-		compatible = "regulator-fixed";
-		regulator-name = "vreg_camw_vcus2_1p1";
-
-		regulator-min-microvolt = <1100000>;
-		regulator-max-microvolt = <1100000>;
-
-		/* Time required for enabling the device */
-		regulator-enable-ramp-delay = <10>;
-
-		gpio = <&tlmm 107 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
-		regulator-always-on; // FIXME!
-
-		vin-supply = <&vreg_bob>;
-	};
-
 	vreg_camw_vdig_1p2: camw-vdig {
 		compatible = "regulator-fixed";
 		regulator-name = "vreg_camw_vdig_1p2";
@@ -925,9 +891,8 @@
 
 		port@3 {
 			csiphy3_ep: endpoint {
-				clock-lanes = <7>;
-				data-lanes = <0 1 2 3>;
-				bus-type = <MEDIA_BUS_TYPE_CSI2_DPHY>;
+				data-lanes = <0 1 2>;
+				bus-type = <MEDIA_BUS_TYPE_CSI2_CPHY>;
 				remote-endpoint = <&camera_imx766_ep>;
 			};
 		};
@@ -1031,6 +996,17 @@
 		compatible = "sony,imx766";
 		reg = <0x10>;
 
+		/*
+		 * cus1 - 72
+		 * cus2 - 107
+		 * vio - 49
+		 * vdig - 108
+		 * vana - 79
+		 * vaf - 96
+		 * reset - 78
+		 * mclk - 67
+		 */
+
 		vdig-supply = <&vreg_camw_vdig_1p2>;
 		vana-supply = <&vreg_camw_vana_2p8>;
 		vif-supply = <&vreg_cam_vio_1p8>;
@@ -1038,7 +1014,10 @@
 		clocks = <&camcc CAM_CC_MCLK3_CLK>;
 		clock-frequency = <19200000>;
 
+		pwdn_gpio = <&tlmm 72 GPIO_ACTIVE_LOW>;
 		reset-gpios = <&tlmm 78 GPIO_ACTIVE_LOW>;
+		power_gpio = <&tlmm 107 GPIO_ACTIVE_LOW>;
+
 		pinctrl-0 = <&mclk3_active>;
 		pinctrl-names = "default";
 
@@ -1047,8 +1026,8 @@
 
 		port {
 			camera_imx766_ep: endpoint {
-				data-lanes = <1 2 3 4>;
-				bus-type = <MEDIA_BUS_TYPE_CSI2_DPHY>;
+				data-lanes = <1 2 3>;
+				bus-type = <MEDIA_BUS_TYPE_CSI2_CPHY>;
 				link-frequencies = /bits/ 64 <600000000>;
 				remote-endpoint = <&csiphy3_ep>;
 			};
