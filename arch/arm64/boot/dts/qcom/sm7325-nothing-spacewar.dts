@@ -281,7 +281,6 @@
 		enable-active-high;
 
 		vin-supply = <&vreg_bob>;
-		regulator-always-on;
 	};
 
 	vreg_camf_vdig_1p2: camf-vdig {
