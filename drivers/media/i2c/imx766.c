@@ -56,7 +56,7 @@
 #define IMX766_LINK_FREQ_436MHZ	436000000 /* 872/2 */
 #define IMX766_LINK_FREQ_560MHZ	300000000 /* 1120/2 */
 #define IMX766_LINK_FREQ	600000000
-#define IMX766_NUM_DATA_LANES	4 // 3?
+#define IMX766_NUM_DATA_LANES	3
 
 #define IMX766_REG_MIN		0x00
 #define IMX766_REG_MAX		0xffff
@@ -1636,12 +1636,6 @@ static int imx766_parse_hw_config(struct imx766 *imx766)
 	fwnode_handle_put(ep);
 	if (ret)
 		return ret;
-
-	if (bus_cfg.bus_type != V4L2_MBUS_CSI2_DPHY) {
-		dev_err(imx766->dev, "selected bus-type is not supported\n");
-		ret = -EINVAL;
-		goto done_endpoint_free;
-	}
 
 	if (bus_cfg.bus.mipi_csi2.num_data_lanes != IMX766_NUM_DATA_LANES) {
 		dev_err(imx766->dev,
