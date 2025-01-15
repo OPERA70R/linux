@@ -85,7 +85,7 @@ static struct rwreg_operation_t {
 /*****************************************************************************
 * Static function prototypes
 *****************************************************************************/
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 10, 0))
+
 static ssize_t fts_debug_write(
     struct file *filp, const char __user *buff, size_t count, loff_t *ppos)
 {
@@ -327,257 +327,11 @@ proc_read_err:
     return ret;
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0))
 static const struct proc_ops fts_proc_fops = {
     .proc_read   = fts_debug_read,
     .proc_write  = fts_debug_write,
 };
-#else
-static const struct file_operations fts_proc_fops = {
-    .owner  = THIS_MODULE,
-    .read   = fts_debug_read,
-    .write  = fts_debug_write,
-};
-#endif
-#else
-static int fts_debug_write(
-    struct file *filp, const char __user *buff, unsigned long count, void *data)
-{
-    u8 *writebuf = NULL;
-    u8 tmpbuf[PROC_BUF_SIZE] = { 0 };
-    int buflen = count;
-    int writelen = 0;
-    int ret = 0;
-    char tmp[PROC_BUF_SIZE];
-    struct fts_ts_data *ts_data = fts_data;
-    struct ftxxxx_proc *proc = &ts_data->proc;
 
-    if (buflen < 1) {
-        FTS_ERROR("apk proc wirte count(%d) fail", buflen);
-        return -EINVAL;
-    }
-
-    if (buflen > PROC_BUF_SIZE) {
-        writebuf = (u8 *)kzalloc(buflen * sizeof(u8), GFP_KERNEL);
-        if (NULL == writebuf) {
-            FTS_ERROR("apk proc wirte buf zalloc fail");
-            return -ENOMEM;
-        }
-    } else {
-        writebuf = tmpbuf;
-    }
-
-    if (copy_from_user(writebuf, buff, buflen)) {
-        FTS_ERROR("[APK]: copy from user error!!");
-        ret = -EFAULT;
-        goto proc_write_err;
-    }
-
-    proc->opmode = writebuf[0];
-    switch (proc->opmode) {
-    case PROC_SET_TEST_FLAG:
-        FTS_DEBUG("[APK]: PROC_SET_TEST_FLAG = %x", writebuf[1]);
-        if (writebuf[1] == 0) {
-            fts_esdcheck_switch(ts_data, ENABLE);
-        } else {
-            fts_esdcheck_switch(ts_data, DISABLE);
-        }
-        break;
-
-    case PROC_READ_REGISTER:
-        proc->cmd[0] = writebuf[1];
-        break;
-
-    case PROC_WRITE_REGISTER:
-        ret = fts_write_reg(writebuf[1], writebuf[2]);
-        if (ret < 0) {
-            FTS_ERROR("PROC_WRITE_REGISTER write error");
-            goto proc_write_err;
-        }
-        break;
-
-    case PROC_READ_DATA:
-        writelen = buflen - 1;
-        if (writelen >= FTS_MAX_COMMMAND_LENGTH) {
-            FTS_ERROR("cmd(PROC_READ_DATA) length(%d) fail", writelen);
-            goto proc_write_err;
-        }
-        memcpy(proc->cmd, writebuf + 1, writelen);
-        proc->cmd_len = writelen;
-        break;
-
-    case PROC_WRITE_DATA:
-        writelen = buflen - 1;
-        ret = fts_write(writebuf + 1, writelen);
-        if (ret < 0) {
-            FTS_ERROR("PROC_WRITE_DATA write error");
-            goto proc_write_err;
-        }
-        break;
-
-
-    case PROC_HW_RESET:
-        if (buflen < PROC_BUF_SIZE) {
-            snprintf(tmp, PROC_BUF_SIZE, "%s", writebuf + 1);
-            tmp[buflen - 1] = '\0';
-            if (strncmp(tmp, "focal_driver", 12) == 0) {
-                FTS_INFO("APK execute HW Reset");
-                fts_reset_proc(ts_data,0);
-            }
-        }
-        break;
-
-    case PROC_SET_BOOT_MODE:
-        FTS_DEBUG("[APK]: PROC_SET_BOOT_MODE = %x", writebuf[1]);
-        if (0 == writebuf[1]) {
-            ts_data->fw_is_running = true;
-        } else {
-            ts_data->fw_is_running = false;
-        }
-        break;
-    case PROC_ENTER_TEST_ENVIRONMENT:
-        FTS_DEBUG("[APK]: PROC_ENTER_TEST_ENVIRONMENT = %x", writebuf[1]);
-        if (0 == writebuf[1]) {
-            fts_enter_test_environment(0);
-        } else {
-            fts_enter_test_environment(1);
-        }
-        break;
-
-    case PROC_READ_DATA_DIRECT:
-        writelen = buflen - 1;
-        if (writelen >= FTS_MAX_COMMMAND_LENGTH) {
-            FTS_ERROR("cmd(PROC_READ_DATA_DIRECT) length(%d) fail", writelen);
-            goto proc_write_err;
-        }
-        memcpy(proc->cmd, writebuf + 1, writelen);
-        proc->cmd_len = writelen;
-        break;
-
-    case PROC_WRITE_DATA_DIRECT:
-        writelen = buflen - 1;
-        ret = fts_spi_transfer_direct(writebuf + 1, writelen, NULL, 0);
-        if (ret < 0) {
-            FTS_ERROR("PROC_WRITE_DATA_DIRECT write error");
-            goto proc_write_err;
-        }
-        break;
-
-    case PROC_CONFIGURE:
-        ts_data->spi->mode = writebuf[1];
-        ts_data->spi->bits_per_word = writebuf[2];
-        ts_data->spi->max_speed_hz = *(u32 *)(writebuf + 4);
-        FTS_INFO("spi,mode=%d,bits=%d,speed=%d", ts_data->spi->mode,
-                 ts_data->spi->bits_per_word, ts_data->spi->max_speed_hz);
-        ret = spi_setup(ts_data->spi);
-        if (ret) {
-            FTS_ERROR("spi setup fail");
-            goto proc_write_err;
-        }
-        break;
-
-    case PROC_CONFIGURE_INTR:
-        if (writebuf[1] == 0)
-            fts_irq_disable();
-        else
-            fts_irq_enable();
-        break;
-
-    default:
-        break;
-    }
-
-    ret = buflen;
-proc_write_err:
-    if ((buflen > PROC_BUF_SIZE) && writebuf) {
-        kfree(writebuf);
-        writebuf = NULL;
-    }
-    return ret;
-}
-
-static int fts_debug_read(
-    char *page, char **start, off_t off, int count, int *eof, void *data )
-{
-    int ret = 0;
-    int num_read_chars = 0;
-    int buflen = count;
-    u8 *readbuf = NULL;
-    u8 tmpbuf[PROC_BUF_SIZE] = { 0 };
-    struct fts_ts_data *ts_data = fts_data;
-    struct ftxxxx_proc *proc = &ts_data->proc;
-
-    if (buflen <= 0) {
-        FTS_ERROR("apk proc read count(%d) fail", buflen);
-        return -EINVAL;
-    }
-
-    if (buflen > PROC_BUF_SIZE) {
-        readbuf = (u8 *)kzalloc(buflen * sizeof(u8), GFP_KERNEL);
-        if (NULL == readbuf) {
-            FTS_ERROR("apk proc buf zalloc fail");
-            return -ENOMEM;
-        }
-    } else {
-        readbuf = tmpbuf;
-    }
-
-    switch (proc->opmode) {
-    case PROC_READ_REGISTER:
-        num_read_chars = 1;
-        ret = fts_read_reg(proc->cmd[0], &readbuf[0]);
-        if (ret < 0) {
-            FTS_ERROR("PROC_READ_REGISTER read error");
-            goto proc_read_err;
-        }
-        break;
-
-    case PROC_READ_DATA:
-        num_read_chars = buflen;
-        ret = fts_read(proc->cmd, proc->cmd_len, readbuf, num_read_chars);
-        if (ret < 0) {
-            FTS_ERROR("PROC_READ_DATA read error");
-            goto proc_read_err;
-        }
-        break;
-
-    case PROC_READ_DATA_DIRECT:
-        num_read_chars = buflen;
-        ret = fts_spi_transfer_direct(proc->cmd, proc->cmd_len, readbuf, num_read_chars);
-        if (ret < 0) {
-            FTS_ERROR("PROC_READ_DATA_DIRECT read error");
-            goto proc_read_err;
-        }
-        break;
-
-    case PROC_GET_DRIVER_INFO:
-        if (buflen >= 64) {
-            num_read_chars = buflen;
-            readbuf[0] = ts_data->bus_type;
-            snprintf(&readbuf[16], buflen - 16, "%s", FTS_DRIVER_VERSION);
-        }
-        break;
-
-    default:
-        break;
-    }
-
-    ret = num_read_chars;
-proc_read_err:
-    if (!memcpy(page, readbuf, num_read_chars)) {
-        FTS_ERROR("copy to user error");
-        ret = -EFAULT;
-    }
-
-    if ((buflen > PROC_BUF_SIZE) && readbuf) {
-        kfree(readbuf);
-        readbuf = NULL;
-    }
-    return ret;
-}
-#endif
-
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 10, 0))
 static int fts_ta_open(struct inode *inode, struct file *file)
 {
     struct fts_ts_data *ts_data = pde_data(inode);
@@ -633,49 +387,28 @@ static ssize_t fts_ta_read(
     return read_num;
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0))
 static const struct proc_ops fts_procta_fops = {
     .proc_open = fts_ta_open,
     .proc_release = fts_ta_release,
     .proc_read = fts_ta_read,
 };
-#else
-static const struct file_operations fts_procta_fops = {
-    .open = fts_ta_open,
-    .release = fts_ta_release,
-    .read = fts_ta_read,
-};
-#endif
-#endif
 
 int fts_create_apk_debug_channel(struct fts_ts_data *ts_data)
 {
     struct ftxxxx_proc *proc = &ts_data->proc;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 10, 0))
+
     proc->proc_entry = proc_create_data(PROC_NAME, 0777, NULL, &fts_proc_fops, ts_data);
     if (NULL == proc->proc_entry) {
         FTS_ERROR("create proc entry fail");
         return -ENOMEM;
     }
-#else
-    proc->proc_entry = create_proc_entry(PROC_NAME, 0777, NULL);
-    if (NULL == proc->proc_entry) {
-        FTS_ERROR("create proc entry fail");
-        return -ENOMEM;
-    }
-    proc->proc_entry->write_proc = fts_debug_write;
-    proc->proc_entry->read_proc = fts_debug_read;
-#endif
 
-
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 10, 0))
     ts_data->proc_ta.proc_entry = proc_create_data("fts_ta", 0777, NULL, \
                                   &fts_procta_fops, ts_data);
     if (!ts_data->proc_ta.proc_entry) {
         FTS_ERROR("create proc_ta entry fail");
         return -ENOMEM;
     }
-#endif
 
     FTS_INFO("Create proc entry success!");
     return 0;
@@ -685,18 +418,11 @@ void fts_release_apk_debug_channel(struct fts_ts_data *ts_data)
 {
     struct ftxxxx_proc *proc = &ts_data->proc;
 
-    if (proc->proc_entry) {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 10, 0))
+    if (proc->proc_entry)
         proc_remove(proc->proc_entry);
-#else
-        remove_proc_entry(PROC_NAME, NULL);
-#endif
-    }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 10, 0))
     if (ts_data->proc_ta.proc_entry)
         proc_remove(ts_data->proc_ta.proc_entry);
-#endif
 }
 
 /************************************************************************
