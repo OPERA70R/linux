@@ -206,12 +206,6 @@
 #define FTS_REPORT_PRESSURE_EN                  0
 
 /*
- * ESD check & protection
- * default: disable
- */
-#define FTS_ESDCHECK_EN                         0
-
-/*
  * Host test enable
  * 1: enable, 0:disable(default)
  */

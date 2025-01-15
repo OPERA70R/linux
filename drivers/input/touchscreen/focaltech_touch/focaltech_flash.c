@@ -699,7 +699,6 @@ static int fts_fw_download(const u8 *buf, u32 len, bool need_reset)
 
     upg->ts_data->fw_loading = 1;
     fts_irq_disable();
-    fts_esdcheck_switch(upg->ts_data, DISABLE);
 
     for (i = 0; i < 3; i++) {
         FTS_INFO("fw download times:%d", i + 1);
@@ -713,7 +712,6 @@ static int fts_fw_download(const u8 *buf, u32 len, bool need_reset)
         goto err_fw_download;
     }
 
-    fts_esdcheck_switch(upg->ts_data, ENABLE);
     ret = 0;
 err_fw_download:
     fts_irq_enable();
@@ -1239,7 +1237,6 @@ int fts_fwupg_init(struct fts_ts_data *ts_data)
         return -ENODATA;
     }
 
-    fts_esdcheck_switch(ts_data, DISABLE);
     fwupgrade->ts_data = ts_data;
     INIT_WORK(&ts_data->fwupg_work, fts_fwupg_work);
     queue_work(ts_data->ts_workqueue, &ts_data->fwupg_work);

@@ -78,7 +78,6 @@
 #define FTS_REG_WORKMODE                    0x00
 #define FTS_REG_WORKMODE_FACTORY_VALUE      0x40
 #define FTS_REG_WORKMODE_WORK_VALUE         0x00
-#define FTS_REG_ESDCHECK_DISABLE            0x8D
 #define FTS_REG_CHIP_ID                     0xA3
 #define FTS_REG_CHIP_ID2                    0x9F
 #define FTS_REG_POWER_MODE                  0xA5
@@ -96,7 +95,6 @@
 #define FTS_REG_CHARGER_MODE_EN             0x8B
 #define FTS_REG_MODULE_ID                   0xE3
 #define FTS_REG_LIC_VER                     0xE4
-#define FTS_REG_ESD_SATURATE                0xED
 #define FACTORY_REG_OPEN_ADDR               0xCF
 #define FACTORY_REG_OPEN_ADDR_FOD           0x02
 #define FTS_REG_EDGE_MODE_EN                0x8C

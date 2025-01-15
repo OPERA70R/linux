@@ -128,11 +128,6 @@ static ssize_t fts_debug_write(
     switch (proc->opmode) {
     case PROC_SET_TEST_FLAG:
         FTS_DEBUG("[APK]: PROC_SET_TEST_FLAG = %x", writebuf[1]);
-        if (writebuf[1] == 0) {
-            fts_esdcheck_switch(ts_data, ENABLE);
-        } else {
-            fts_esdcheck_switch(ts_data, DISABLE);
-        }
         break;
 
     case PROC_READ_REGISTER:

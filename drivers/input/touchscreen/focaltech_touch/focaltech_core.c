@@ -1466,11 +1466,6 @@ static int fts_ts_probe_entry(struct fts_ts_data *ts_data)
     }
 #endif
 
-    ret = fts_esdcheck_init(ts_data);
-    if (ret) {
-        FTS_ERROR("init esd check fail");
-    }
-
     ret = fts_irq_registration(ts_data);
     if (ret) {
         FTS_ERROR("request irq failed");
@@ -1557,8 +1552,6 @@ static int fts_ts_remove_entry(struct fts_ts_data *ts_data)
 #if FTS_TEST_EN
     fts_test_exit(ts_data);
 #endif
-
-    fts_esdcheck_exit(ts_data);
 
     free_irq(ts_data->irq, ts_data);
 
@@ -1663,8 +1656,6 @@ static int fts_ts_resume(struct device *dev)
 
     fts_wait_tp_to_valid();
     fts_ex_mode_recovery(ts_data);
-
-    fts_esdcheck_resume(ts_data);
 
     FTS_FUNC_EXIT();
     ts_data->blank_up = 0;

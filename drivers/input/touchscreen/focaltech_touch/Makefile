@@ -4,7 +4,6 @@
 fts_tp-y	+=  focaltech_core.o
 fts_tp-y	+=  focaltech_ex_fun.o
 fts_tp-y	+=  focaltech_ex_mode.o
-fts_tp-y	+=  focaltech_esdcheck.o
 fts_tp-y	+=  focaltech_point_report_check.o
 
 fts_tp-y	+=  focaltech_flash.o
