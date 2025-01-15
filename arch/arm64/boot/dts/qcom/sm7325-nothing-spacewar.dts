@@ -891,8 +891,10 @@
 
 		port@3 {
 			csiphy3_ep: endpoint {
+				/* HACK! This is the C-PHY Camera*/
+				clock-lanes = <7>;
 				data-lanes = <0 1 2>;
-				bus-type = <MEDIA_BUS_TYPE_CSI2_CPHY>;
+				bus-type = <MEDIA_BUS_TYPE_CSI2_DPHY>;
 				remote-endpoint = <&camera_imx766_ep>;
 			};
 		};
@@ -1026,7 +1028,7 @@
 		port {
 			camera_imx766_ep: endpoint {
 				data-lanes = <1 2 3>;
-				bus-type = <MEDIA_BUS_TYPE_CSI2_CPHY>;
+				bus-type = <MEDIA_BUS_TYPE_CSI2_DPHY>;
 				link-frequencies = /bits/ 64 <600000000>;
 				remote-endpoint = <&csiphy3_ep>;
 			};
@@ -1501,14 +1503,8 @@
 		focaltech,ic-type = <0x3658d488>;
 
 		vdd-supply = <&vdd_ts>;
-		iovdd-supply = <&vreg_l8c_1p8>;
+		vddio-supply = <&vreg_l8c_1p8>;
 
-		pinctrl-0 = <&ts_active>;
-		pinctrl-1 = <&ts_release>;
-		pinctrl-2 = <&ts_suspend>;
-		pinctrl-names = "pmx_ts_active",
-				"pmx_ts_release",
-				"pmx_ts_suspend";
 		focaltech,trusted-touch-mode = "vm_mode";
 		focaltech,touch-environment = "pvm";
 		focaltech,trusted-touch-spi-irq = <601>;

@@ -243,8 +243,8 @@ struct fts_ts_data {
     u8 *bus_rx_buf;
     int bus_type;
     struct fts_fod_info fod_info;
-    struct regulator *vdd;
-    struct regulator *iovdd;
+    struct regulator_bulk_data *supplies;
+    struct gpio_desc *reset_gpio;
 #if FTS_PINCTRL_EN
     struct pinctrl *pinctrl;
     struct pinctrl_state *pins_active;
@@ -284,6 +284,11 @@ enum _FTS_STYLUS_ETYPE {
 enum _FTS_GESTURE_BMODE {
     GESTURE_BM_REG,
     GESTURE_BM_TOUCH,
+};
+
+static const struct regulator_bulk_data fts_tp_supplies[] = {
+	{ .supply = "vdd" },
+	{ .supply = "vddio" },
 };
 
 /*****************************************************************************

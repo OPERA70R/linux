@@ -66,10 +66,6 @@
 #define INTERVAL_READ_REG                   200  /* unit:ms */
 #define TIMEOUT_READ_REG                    1000 /* unit:ms */
 #if FTS_POWER_SOURCE_CUST_EN
-#define FTS_VTG_MIN_UV                      2800000
-#define FTS_VTG_MAX_UV                      3300000
-#define FTS_SPI_VTG_MIN_UV                  1800000
-#define FTS_SPI_VTG_MAX_UV                  1800000
 #endif
 #if defined(CONFIG_DRM)
 #if defined(CONFIG_DRM_PANEL)
@@ -1116,269 +1112,47 @@ static int fts_buffer_init(struct fts_ts_data *ts_data)
     return 0;
 }
 
-#if FTS_POWER_SOURCE_CUST_EN
-/*****************************************************************************
-* Power Control
-*****************************************************************************/
-#if FTS_PINCTRL_EN
-static int fts_pinctrl_init(struct fts_ts_data *ts)
+static int fts_power_on(struct fts_ts_data *ts_data)
 {
-    int ret = 0;
+    int ret;
 
-    ts->pinctrl = devm_pinctrl_get(ts->dev);
-    if (IS_ERR_OR_NULL(ts->pinctrl)) {
-        FTS_ERROR("Failed to get pinctrl, please check dts");
-        ret = PTR_ERR(ts->pinctrl);
-        goto err_pinctrl_get;
-    }
-
-    ts->pins_active = pinctrl_lookup_state(ts->pinctrl, "pmx_ts_active");
-    if (IS_ERR_OR_NULL(ts->pins_active)) {
-        FTS_ERROR("Pin state[active] not found");
-        ret = PTR_ERR(ts->pins_active);
-        goto err_pinctrl_lookup;
-    }
-
-    ts->pins_suspend = pinctrl_lookup_state(ts->pinctrl, "pmx_ts_suspend");
-    if (IS_ERR_OR_NULL(ts->pins_suspend)) {
-        FTS_ERROR("Pin state[suspend] not found");
-        ret = PTR_ERR(ts->pins_suspend);
-        goto err_pinctrl_lookup;
-    }
-
-    ts->pins_release = pinctrl_lookup_state(ts->pinctrl, "pmx_ts_release");
-    if (IS_ERR_OR_NULL(ts->pins_release)) {
-        FTS_ERROR("Pin state[release] not found");
-        ret = PTR_ERR(ts->pins_release);
-    }
-
-    return 0;
-err_pinctrl_lookup:
-    if (ts->pinctrl) {
-        devm_pinctrl_put(ts->pinctrl);
-    }
-err_pinctrl_get:
-    ts->pinctrl = NULL;
-    ts->pins_release = NULL;
-    ts->pins_suspend = NULL;
-    ts->pins_active = NULL;
-    return ret;
-}
-
-static int fts_pinctrl_select_normal(struct fts_ts_data *ts)
-{
-    int ret = 0;
-
-    if (ts->pinctrl && ts->pins_active) {
-        ret = pinctrl_select_state(ts->pinctrl, ts->pins_active);
-        if (ret < 0) {
-            FTS_ERROR("Set normal pin state error:%d", ret);
-        }
-    }
-
-    return ret;
-}
-
-static int fts_pinctrl_select_suspend(struct fts_ts_data *ts)
-{
-    int ret = 0;
-
-    if (ts->pinctrl && ts->pins_suspend) {
-        ret = pinctrl_select_state(ts->pinctrl, ts->pins_suspend);
-        if (ret < 0) {
-            FTS_ERROR("Set suspend pin state error:%d", ret);
-        }
-    }
-
-    return ret;
-}
-
-static int fts_pinctrl_select_release(struct fts_ts_data *ts)
-{
-    int ret = 0;
-
-    if (ts->pinctrl) {
-        if (IS_ERR_OR_NULL(ts->pins_release)) {
-            devm_pinctrl_put(ts->pinctrl);
-            ts->pinctrl = NULL;
-        } else {
-            ret = pinctrl_select_state(ts->pinctrl, ts->pins_release);
-            if (ret < 0)
-                FTS_ERROR("Set gesture pin state error:%d", ret);
-        }
-    }
-
-    return ret;
-}
-#endif /* FTS_PINCTRL_EN */
-
-static int fts_power_source_ctrl(struct fts_ts_data *ts_data, int enable)
-{
-    int ret = 0;
-
-    if (IS_ERR_OR_NULL(ts_data->vdd)) {
-        FTS_ERROR("vdd is invalid");
-        return -EINVAL;
-    }
-
-    FTS_FUNC_ENTER();
-    if (enable) {
-        if (ts_data->power_disabled) {
-            FTS_DEBUG("regulator enable !");
-            gpio_direction_output(ts_data->pdata->reset_gpio, 0);
-            msleep(1);
-            if (!IS_ERR_OR_NULL(ts_data->iovdd)) {
-                ret = regulator_enable(ts_data->iovdd);
-                if (ret) {
-                    FTS_ERROR("enable iovdd regulator failed,ret=%d", ret);
-                }
-            }
-            msleep(1);
-            ret = regulator_enable(ts_data->vdd);
-            if (ret) {
-                FTS_ERROR("enable vdd regulator failed,ret=%d", ret);
-            }
-
-            ts_data->power_disabled = false;
-        }
-    } else {
-        if (!ts_data->power_disabled) {
-            FTS_DEBUG("regulator disable !");
-            gpio_direction_output(ts_data->pdata->reset_gpio, 0);
-            msleep(1);
-            ret = regulator_disable(ts_data->vdd);
-            if (ret) {
-                FTS_ERROR("disable vdd regulator failed,ret=%d", ret);
-            }
-            if (!IS_ERR_OR_NULL(ts_data->iovdd)) {
-                ret = regulator_disable(ts_data->iovdd);
-                if (ret) {
-                    FTS_ERROR("disable iovdd regulator failed,ret=%d", ret);
-                }
-            }
-            ts_data->power_disabled = true;
-        }
-    }
-
-    FTS_FUNC_EXIT();
-    return ret;
-}
-
-/*****************************************************************************
-* Name: fts_power_source_init
-* Brief: Init regulator power:vdd/vcc_io(if have), generally, no vcc_io
-*        vdd---->vdd-supply in dts, kernel will auto add "-supply" to parse
-*        Must be call after fts_gpio_configure() execute,because this function
-*        will operate reset-gpio which request gpio in fts_gpio_configure()
-* Input:
-* Output:
-* Return: return 0 if init power successfully, otherwise return error code
-*****************************************************************************/
-static int fts_power_source_init(struct fts_ts_data *ts_data)
-{
-    int ret = 0;
-
-    FTS_FUNC_ENTER();
-    ts_data->vdd = regulator_get(ts_data->dev, "vdd");
-    if (IS_ERR_OR_NULL(ts_data->vdd)) {
-        ret = PTR_ERR(ts_data->vdd);
-        FTS_ERROR("get vdd regulator failed,ret=%d", ret);
+	ret = regulator_bulk_enable(ARRAY_SIZE(fts_tp_supplies),
+				    ts_data->supplies);
+	if (ret < 0) {
+        regulator_bulk_disable(ARRAY_SIZE(fts_tp_supplies),
+                                                ts_data->supplies);
         return ret;
     }
 
-    if (regulator_count_voltages(ts_data->vdd) > 0) {
-        ret = regulator_set_voltage(ts_data->vdd, FTS_VTG_MIN_UV,
-                                    FTS_VTG_MAX_UV);
-        if (ret) {
-            FTS_ERROR("vdd regulator set_vtg failed ret=%d", ret);
-            regulator_put(ts_data->vdd);
-            return ret;
-        }
-    }
-
-    ts_data->iovdd = regulator_get(ts_data->dev, "iovdd");
-    if (!IS_ERR_OR_NULL(ts_data->iovdd)) {
-        if (regulator_count_voltages(ts_data->iovdd) > 0) {
-            ret = regulator_set_voltage(ts_data->iovdd,
-                                        FTS_SPI_VTG_MIN_UV,
-                                        FTS_SPI_VTG_MAX_UV);
-            if (ret) {
-                FTS_ERROR("iovdd regulator set_vtg failed,ret=%d", ret);
-                regulator_put(ts_data->iovdd);
-            }
-        }
-    }
-
-#if FTS_PINCTRL_EN
-    fts_pinctrl_init(ts_data);
-    fts_pinctrl_select_normal(ts_data);
-#endif
-
-    ts_data->power_disabled = true;
-    ret = fts_power_source_ctrl(ts_data, ENABLE);
-    if (ret) {
-        FTS_ERROR("fail to enable power(regulator)");
-    }
-
-    FTS_FUNC_EXIT();
-    return ret;
-}
-
-static int fts_power_source_exit(struct fts_ts_data *ts_data)
-{
-#if FTS_PINCTRL_EN
-    fts_pinctrl_select_release(ts_data);
-#endif
-
-    fts_power_source_ctrl(ts_data, DISABLE);
-
-    if (!IS_ERR_OR_NULL(ts_data->vdd)) {
-        if (regulator_count_voltages(ts_data->vdd) > 0)
-            regulator_set_voltage(ts_data->vdd, 0, FTS_VTG_MAX_UV);
-        regulator_put(ts_data->vdd);
-    }
-
-    if (!IS_ERR_OR_NULL(ts_data->iovdd)) {
-        if (regulator_count_voltages(ts_data->iovdd) > 0)
-            regulator_set_voltage(ts_data->iovdd, 0, FTS_SPI_VTG_MAX_UV);
-        regulator_put(ts_data->iovdd);
-    }
+    gpiod_set_value_cansleep(ts_data->reset_gpio, 0);
 
     return 0;
 }
 
-static int fts_power_source_suspend(struct fts_ts_data *ts_data)
+static void fts_power_off(struct fts_ts_data *ts_data)
 {
-    int ret = 0;
+    gpiod_set_value_cansleep(ts_data->reset_gpio, 1);
+	regulator_bulk_disable(ARRAY_SIZE(fts_tp_supplies),
+                          ts_data->supplies);
+}
 
-#if FTS_PINCTRL_EN
-    fts_pinctrl_select_suspend(ts_data);
-#endif
+static int fts_power_suspend(struct fts_ts_data *ts_data)
+{
+    fts_power_off(ts_data);
 
-    ret = fts_power_source_ctrl(ts_data, DISABLE);
-    if (ret < 0) {
-        FTS_ERROR("power off fail, ret=%d", ret);
-    }
-
-    return ret;
+    return 0;
 }
 
 static int fts_power_source_resume(struct fts_ts_data *ts_data)
 {
-    int ret = 0;
+    int ret;
 
-#if FTS_PINCTRL_EN
-    fts_pinctrl_select_normal(ts_data);
-#endif
+    ret = fts_power_on(ts_data);
+    if (ret)
+		return ret;
 
-    ret = fts_power_source_ctrl(ts_data, ENABLE);
-    if (ret < 0) {
-        FTS_ERROR("power on fail, ret=%d", ret);
-    }
-
-    return ret;
+    return 0;
 }
-#endif /* FTS_POWER_SOURCE_CUST_EN */
 
 static int fts_gpio_configure(struct fts_ts_data *data)
 {
@@ -1821,14 +1595,6 @@ static int fts_ts_probe_entry(struct fts_ts_data *ts_data)
         goto err_gpio_config;
     }
 
-#if FTS_POWER_SOURCE_CUST_EN
-    ret = fts_power_source_init(ts_data);
-    if (ret) {
-        FTS_ERROR("fail to get power(regulator)");
-        goto err_power_init;
-    }
-#endif
-
 #if (!FTS_CHIP_IDC)
     fts_reset_proc(ts_data,200);
 #endif
@@ -1927,10 +1693,6 @@ static int fts_ts_probe_entry(struct fts_ts_data *ts_data)
     return 0;
 
 err_irq_req:
-#if FTS_POWER_SOURCE_CUST_EN
-err_power_init:
-    fts_power_source_exit(ts_data);
-#endif
     if (gpio_is_valid(ts_data->pdata->reset_gpio))
         gpio_free(ts_data->pdata->reset_gpio);
     if (gpio_is_valid(ts_data->pdata->irq_gpio))
@@ -2007,9 +1769,7 @@ static int fts_ts_remove_entry(struct fts_ts_data *ts_data)
     if (gpio_is_valid(ts_data->pdata->irq_gpio))
         gpio_free(ts_data->pdata->irq_gpio);
 
-#if FTS_POWER_SOURCE_CUST_EN
-    fts_power_source_exit(ts_data);
-#endif
+    fts_power_off(ts_data);
 
     kfree_safe(ts_data->touch_buf);
     kfree_safe(ts_data->pdata);
@@ -2049,7 +1809,7 @@ static int fts_ts_suspend(struct device *dev)
 
         if (!ts_data->ic_info.is_incell) {
 #if FTS_POWER_SOURCE_CUST_EN
-            ret = fts_power_source_suspend(ts_data);
+            ret = fts_power_suspend(ts_data);
             if (ret < 0) {
                 FTS_ERROR("power enter suspend fail");
             }
@@ -2144,24 +1904,37 @@ static void gesture_work_func(struct work_struct *work)
 *****************************************************************************/
 static int fts_ts_probe(struct spi_device *spi)
 {
-    int ret = 0;
     struct fts_ts_data *ts_data = NULL;
+    int ret = 0;
 
-    FTS_INFO("Touch Screen(SPI BUS) driver prboe...");
     spi->mode = SPI_MODE_0;
     spi->bits_per_word = 8;
     ret = spi_setup(spi);
-    if (ret) {
-        FTS_ERROR("spi setup fail");
+    if (ret)
         return ret;
-    }
 
-    /* malloc memory for global struct variable */
-    ts_data = (struct fts_ts_data *)kzalloc(sizeof(*ts_data), GFP_KERNEL);
-    if (!ts_data) {
-        FTS_ERROR("allocate memory for fts_data fail");
+    ts_data = devm_kzalloc(&spi->dev, sizeof(*ts_data), GFP_KERNEL);
+    if (!ts_data)
         return -ENOMEM;
-    }
+
+    /* Request reset GPIO */
+	ts_data->reset_gpio = devm_gpiod_get_optional(&spi->dev, "reset", GPIOD_OUT_HIGH);
+	if (IS_ERR(ts_data->reset_gpio))
+		return dev_err_probe(&spi->dev, PTR_ERR(ts_data->reset_gpio),
+				     "Failed to request reset gpio\n");
+
+    /* Request regulators */
+	ret = devm_regulator_bulk_get_const(&spi->dev,
+					    ARRAY_SIZE(fts_tp_supplies),
+					    fts_tp_supplies,
+					    &ts_data->supplies);
+	if (ret < 0)
+		return dev_err_probe(&spi->dev, ret, "Failed to get regulators\n");
+
+    /* Power ON */
+	ret = fts_power_on(ts_data);
+	if (ret)
+        return dev_err_probe(&spi->dev, ret, "Failed power on\n");
 
     fts_data = ts_data;
     ts_data->spi = spi;
@@ -2180,6 +1953,7 @@ static int fts_ts_probe(struct spi_device *spi)
     device_init_wakeup(ts_data->dev,true);
     INIT_DELAYED_WORK(&ts_data->gesture_work, gesture_work_func);
     FTS_INFO("Touch Screen(SPI BUS) driver prboe successfully");
+
     return 0;
 }
 
