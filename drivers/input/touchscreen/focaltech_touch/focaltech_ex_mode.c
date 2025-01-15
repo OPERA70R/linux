@@ -205,7 +205,6 @@ static ssize_t fts_glove_mode_store(
     return count;
 }
 
-
 static ssize_t fts_cover_mode_show(
     struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -299,7 +298,6 @@ static ssize_t fts_charger_mode_store(
     FTS_DEBUG("charger mode:%d", ts_data->glove_mode);
     return count;
 }
-
 
 /* read and write charger mode
  * read example: cat fts_glove_mode        ---read  glove mode

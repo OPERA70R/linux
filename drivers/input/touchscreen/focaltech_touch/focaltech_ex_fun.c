@@ -161,7 +161,6 @@ static ssize_t fts_debug_write(
         }
         break;
 
-
     case PROC_HW_RESET:
         if (buflen < PROC_BUF_SIZE) {
             snprintf(tmp, PROC_BUF_SIZE, "%s", writebuf + 1);
@@ -643,7 +642,6 @@ static int shex_to_int(const char *hex_buf, int size)
     return value;
 }
 
-
 static u8 shex_to_u8(const char *hex_buf, int size)
 {
     return (u8)shex_to_int(hex_buf, size);
@@ -1065,7 +1063,6 @@ static ssize_t fts_coordinate_show(
     struct fts_ts_data *ts_data = dev_get_drvdata(dev);
 
     count = snprintf(buf, PAGE_SIZE, "x:%02x\ny:%02x\n", ts_data->xbuf,ts_data->ybuf);
-
 
     return count;
 }

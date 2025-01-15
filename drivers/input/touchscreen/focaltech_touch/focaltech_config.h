@@ -71,8 +71,6 @@
 #define _FT7130             0x71300825
 #define _FT8205             0x82050826
 
-
-
 #define _FT5426             0x54260402
 #define _FT5436             0x54360402
 #define _FT5526             0x55260402
@@ -175,10 +173,6 @@
 #define _FT3169             0x3169008B
 #define _FT3269             0x3269008B
 
-
-
-/*************************************************/
-
 /*
  * choose your ic chip type of focaltech
  */
@@ -192,37 +186,6 @@
  * enable it for debug, disable it for release
  */
 #define FTS_DEBUG_EN                            0
-
-/*
- * Linux MultiTouch Protocol
- * 1: Protocol B(default), 0: Protocol A
- */
-#define FTS_MT_PROTOCOL_B_EN                    1
-
-/*
- * Report Pressure in multitouch
- * 1:enable(default),0:disable
-*/
-#define FTS_REPORT_PRESSURE_EN                  0
-
-/*
- * Host test enable
- * 1: enable, 0:disable(default)
- */
-#define FTS_TEST_EN                             0
-
-/*
- * Pinctrl enable
- * default: disable
- */
-#define FTS_PINCTRL_EN                          1
-
-/*
- * Customer power enable
- * enable it when customer need control TP power
- * default: disable
- */
-#define FTS_POWER_SOURCE_CUST_EN                1
 
 /****************************************************/
 

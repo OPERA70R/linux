@@ -1,5 +1,5 @@
 /************************************************************************
-* Copyright (c) 2012-2020, Focaltech Systems (R)£¬All Rights Reserved.
+* Copyright (c) 2012-2020, Focaltech Systems (R)ï¿½ï¿½All Rights Reserved.
 *
 * File Name: focaltech_flash.h
 *
@@ -203,12 +203,4 @@ struct fts_upgrade {
     u32 lic_length;
 };
 
-/*****************************************************************************
-* Global variable or extern global variabls/functions
-*****************************************************************************/
-
-
-/*****************************************************************************
-* Static function prototypes
-*****************************************************************************/
 #endif

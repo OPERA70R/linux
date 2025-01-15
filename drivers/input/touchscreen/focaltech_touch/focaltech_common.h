@@ -58,7 +58,6 @@
 
 #define FTS_CHIP_TYPE_MAPPING {{0x8A, 0x56, 0x62, 0x56, 0x62, 0x56, 0xE2, 0x00, 0x00}}
 
-
 #define FILE_NAME_LENGTH                    128
 #define ENABLE                              1
 #define DISABLE                             0

@@ -111,7 +111,6 @@
 #define FTS_PATCH_COMERR_PM                 0
 #define FTS_TIMEOUT_COMERR_PM               700
 
-
 /*****************************************************************************
 * Private enumerations, structures and unions using typedef
 *****************************************************************************/
@@ -217,12 +216,6 @@ struct fts_ts_data {
     struct fts_fod_info fod_info;
     struct regulator_bulk_data *supplies;
     struct gpio_desc *reset_gpio;
-#if FTS_PINCTRL_EN
-    struct pinctrl *pinctrl;
-    struct pinctrl_state *pins_active;
-    struct pinctrl_state *pins_suspend;
-    struct pinctrl_state *pins_release;
-#endif
 #if defined(CONFIG_FB) || defined(CONFIG_DRM)
     struct notifier_block fb_notif;
 #elif defined(CONFIG_HAS_EARLYSUSPEND)
@@ -278,12 +271,6 @@ void fts_release_apk_debug_channel(struct fts_ts_data *);
 /* ADB functions */
 int fts_create_sysfs(struct fts_ts_data *ts_data);
 int fts_remove_sysfs(struct fts_ts_data *ts_data);
-
-/* Host test */
-#if FTS_TEST_EN
-int fts_test_init(struct fts_ts_data *ts_data);
-int fts_test_exit(struct fts_ts_data *ts_data);
-#endif
 
 /* Point Report Check*/
 int fts_point_report_check_init(struct fts_ts_data *ts_data);

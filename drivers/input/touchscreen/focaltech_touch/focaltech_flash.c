@@ -803,7 +803,6 @@ static int fts_read_file_request_firmware(char *file_name, u8 **file_buf)
     return ret;
 }
 
-
 static int fts_read_file(char *file_name, u8 **file_buf)
 {
     int ret = 0;
@@ -858,7 +857,6 @@ err_bin:
     }
     return ret;
 }
-
 
 int fts_enter_test_environment(bool test_state)
 {

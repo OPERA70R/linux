@@ -65,8 +65,6 @@
 #define FTS_DRIVER_PEN_NAME                 "fts_ts,pen"
 #define INTERVAL_READ_REG                   200  /* unit:ms */
 #define TIMEOUT_READ_REG                    1000 /* unit:ms */
-#if FTS_POWER_SOURCE_CUST_EN
-#endif
 #if defined(CONFIG_DRM)
 #if defined(CONFIG_DRM_PANEL)
 #define DRM_CHK_MAX_COUNTS          30
@@ -82,11 +80,6 @@ struct fts_ts_data *fts_data;
 static int drm_check_count = 0;
 #endif
 #endif
-
-#if FTS_POWER_SOURCE_CUST_EN
-#include <linux/pinctrl/consumer.h>
-#endif
-
 
 /*****************************************************************************
 * Static function prototypes
@@ -274,7 +267,6 @@ static int fts_match_cid(struct fts_ts_data *ts_data,
 #endif
 }
 
-
 static int fts_get_chip_types(
     struct fts_ts_data *ts_data,
     u8 id_h, u8 id_l, bool fw_valid)
@@ -388,7 +380,6 @@ static int fts_get_ic_information(struct fts_ts_data *ts_data)
         return -EIO;
     }
 
-
     FTS_INFO("get ic information, chip id = 0x%02x%02x(cid type=0x%x)",
              ts_data->ic_info.ids.chip_idh, ts_data->ic_info.ids.chip_idl,
              ts_data->ic_info.cid.type);
@@ -428,20 +419,15 @@ void fts_release_all_finger(void)
 {
     struct fts_ts_data *ts_data = fts_data;
     struct input_dev *input_dev = ts_data->input_dev;
-#if FTS_MT_PROTOCOL_B_EN
     u32 finger_count = 0;
     u32 max_touches = ts_data->pdata->max_touch_number;
-#endif
 
     mutex_lock(&ts_data->report_mutex);
-#if FTS_MT_PROTOCOL_B_EN
     for (finger_count = 0; finger_count < max_touches; finger_count++) {
         input_mt_slot(input_dev, finger_count);
         input_mt_report_slot_state(input_dev, MT_TOOL_FINGER, false);
     }
-#else
-    input_mt_sync(input_dev);
-#endif
+
     input_report_key(input_dev, BTN_TOUCH, 0);
     input_sync(input_dev);
 
@@ -492,7 +478,6 @@ static int fts_input_report_key(struct fts_ts_data *ts_data, struct ts_event *ke
     return -EINVAL;
 }
 
-#if FTS_MT_PROTOCOL_B_EN
 static int fts_input_report_b(struct fts_ts_data *ts_data, struct ts_event *events)
 {
     int i = 0;
@@ -511,9 +496,7 @@ static int fts_input_report_b(struct fts_ts_data *ts_data, struct ts_event *even
         if (EVENT_DOWN(events[i].flag)) {
             input_mt_slot(input_dev, events[i].id);
             input_mt_report_slot_state(input_dev, MT_TOOL_FINGER, true);
-#if FTS_REPORT_PRESSURE_EN
             input_report_abs(input_dev, ABS_MT_PRESSURE, events[i].p);
-#endif
             input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR, events[i].area);
             input_report_abs(input_dev, ABS_MT_POSITION_X, events[i].x);
             input_report_abs(input_dev, ABS_MT_POSITION_Y, events[i].y);
@@ -558,54 +541,6 @@ static int fts_input_report_b(struct fts_ts_data *ts_data, struct ts_event *even
     input_sync(input_dev);
     return 0;
 }
-#else
-static int fts_input_report_a(struct fts_ts_data *ts_data, struct ts_event *events)
-{
-    int i = 0;
-    int touch_down_point_num_cur = 0;
-    bool touch_event_coordinate = false;
-    struct input_dev *input_dev = ts_data->input_dev;
-
-    for (i = 0; i < ts_data->touch_event_num; i++) {
-        if (fts_input_report_key(ts_data, &events[i]) == 0) {
-            continue;
-        }
-
-        touch_event_coordinate = true;
-        if (EVENT_DOWN(events[i].flag)) {
-            input_report_abs(input_dev, ABS_MT_TRACKING_ID, events[i].id);
-#if FTS_REPORT_PRESSURE_EN
-            input_report_abs(input_dev, ABS_MT_PRESSURE, events[i].p);
-#endif
-            input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR, events[i].area);
-            input_report_abs(input_dev, ABS_MT_POSITION_X, events[i].x);
-            input_report_abs(input_dev, ABS_MT_POSITION_Y, events[i].y);
-            input_mt_sync(input_dev);
-
-            touch_down_point_num_cur++;
-            if ((ts_data->log_level >= 2) ||
-                ((1 == ts_data->log_level) && (FTS_TOUCH_DOWN == events[i].flag))) {
-                FTS_DEBUG("[A]P%d(%d, %d)[p:%d,tm:%d] DOWN!",
-                          events[i].id, events[i].x, events[i].y,
-                          events[i].p, events[i].area);
-            }
-        }
-    }
-
-    if (touch_down_point_num_cur)
-        input_report_key(input_dev, BTN_TOUCH, 1);
-    else if (touch_event_coordinate || ts_data->touch_points) {
-        if (ts_data->touch_points && (ts_data->log_level >= 1))
-            FTS_DEBUG("[A]Points All Up!");
-        input_report_key(input_dev, BTN_TOUCH, 0);
-        input_mt_sync(input_dev);
-    }
-
-    ts_data->touch_points = touch_down_point_num_cur;
-    input_sync(input_dev);
-    return 0;
-}
-#endif
 
 static int fts_read_touchdata(struct fts_ts_data *ts_data, u8 *buf)
 {
@@ -626,10 +561,8 @@ static int fts_read_touchdata(struct fts_ts_data *ts_data, u8 *buf)
         return ret;
     }
 
-
     return 0;
 }
-
 
 static int fts_read_parse_touchdata(struct fts_ts_data *ts_data, u8 *touch_buf)
 {
@@ -716,11 +649,7 @@ static int fts_irq_read_report(struct fts_ts_data *ts_data)
         ts_data->touch_event_num = event_num;
 
         mutex_lock(&ts_data->report_mutex);
-#if FTS_MT_PROTOCOL_B_EN
         fts_input_report_b(ts_data, events);
-#else
-        fts_input_report_a(ts_data, events);
-#endif
         mutex_unlock(&ts_data->report_mutex);
         break;
 
@@ -754,11 +683,7 @@ static int fts_irq_read_report(struct fts_ts_data *ts_data)
         }
 
         mutex_lock(&ts_data->report_mutex);
-#if FTS_MT_PROTOCOL_B_EN
         fts_input_report_b(ts_data, events);
-#else
-        fts_input_report_a(ts_data, events);
-#endif
         mutex_unlock(&ts_data->report_mutex);
         break;
 
@@ -797,11 +722,7 @@ static int fts_irq_read_report(struct fts_ts_data *ts_data)
         }
 
         mutex_lock(&ts_data->report_mutex);
-#if FTS_MT_PROTOCOL_B_EN
         fts_input_report_b(ts_data, events);
-#else
-        fts_input_report_a(ts_data, events);
-#endif
         mutex_unlock(&ts_data->report_mutex);
         break;
 
@@ -902,17 +823,11 @@ static int fts_input_init(struct fts_ts_data *ts_data)
             input_set_capability(input_dev, EV_KEY, pdata->keys[key_num]);
     }
 
-#if FTS_MT_PROTOCOL_B_EN
     input_mt_init_slots(input_dev, pdata->max_touch_number, INPUT_MT_DIRECT);
-#else
-    input_set_abs_params(input_dev, ABS_MT_TRACKING_ID, 0, 0x0F, 0, 0);
-#endif
     input_set_abs_params(input_dev, ABS_MT_POSITION_X, pdata->x_min, pdata->x_max, 0, 0);
     input_set_abs_params(input_dev, ABS_MT_POSITION_Y, pdata->y_min, pdata->y_max, 0, 0);
     input_set_abs_params(input_dev, ABS_MT_TOUCH_MAJOR, 0, 0xFF, 0, 0);
-#if FTS_REPORT_PRESSURE_EN
     input_set_abs_params(input_dev, ABS_MT_PRESSURE, 0, 0xFF, 0, 0);
-#endif
 
     ret = input_register_device(input_dev);
     if (ret) {
@@ -937,7 +852,6 @@ static int fts_buffer_init(struct fts_ts_data *ts_data)
     }
 
     ts_data->touch_size = FTS_TOUCH_DATA_LEN;
-
 
     ts_data->touch_analysis_support = 0;
     ts_data->ta_flag = 0;
@@ -977,7 +891,7 @@ static int fts_power_suspend(struct fts_ts_data *ts_data)
     return 0;
 }
 
-static int fts_power_source_resume(struct fts_ts_data *ts_data)
+static int fts_power_resume(struct fts_ts_data *ts_data)
 {
     int ret;
 
@@ -1459,13 +1373,6 @@ static int fts_ts_probe_entry(struct fts_ts_data *ts_data)
         FTS_ERROR("init glove/cover/charger fail");
     }
 
-#if FTS_TEST_EN
-    ret = fts_test_init(ts_data);
-    if (ret) {
-        FTS_ERROR("init host test fail");
-    }
-#endif
-
     ret = fts_irq_registration(ts_data);
     if (ret) {
         FTS_ERROR("request irq failed");
@@ -1548,10 +1455,6 @@ static int fts_ts_remove_entry(struct fts_ts_data *ts_data)
     fts_ex_mode_exit(ts_data);
 
     fts_fwupg_exit(ts_data);
-
-#if FTS_TEST_EN
-    fts_test_exit(ts_data);
-#endif
 
     free_irq(ts_data->irq, ts_data);
 
@@ -1647,12 +1550,8 @@ static int fts_ts_resume(struct device *dev)
     ts_data->suspended = false;
     fts_release_all_finger();
 
-    if (!ts_data->ic_info.is_incell) {
-#if FTS_POWER_SOURCE_CUST_EN
-        fts_power_source_resume(ts_data);
-#endif
-        fts_reset_proc(ts_data,200);
-    }
+    if (!ts_data->ic_info.is_incell)
+        fts_power_resume(ts_data);
 
     fts_wait_tp_to_valid();
     fts_ex_mode_recovery(ts_data);

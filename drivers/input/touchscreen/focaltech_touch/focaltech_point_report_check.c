@@ -100,7 +100,6 @@ void fts_prc_queue_work(struct fts_ts_data *ts_data)
     }
 }
 
-
 static ssize_t fts_prc_store(
     struct device *dev,
     struct device_attribute *attr, const char *buf, size_t count)

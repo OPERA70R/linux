@@ -347,7 +347,6 @@ int fts_read_reg(u8 addr, u8 *value)
     return fts_read(&addr, 1, value, 1);
 }
 
-
 int fts_spi_transfer_direct(u8 *writebuf, u32 writelen, u8 *readbuf, u32 readlen)
 {
     int ret = 0;
