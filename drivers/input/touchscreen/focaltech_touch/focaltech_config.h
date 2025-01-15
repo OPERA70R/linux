@@ -206,18 +206,6 @@
 #define FTS_REPORT_PRESSURE_EN                  0
 
 /*
- * Stylus PEN enable
- * 1:enable(default),0:disable
-*/
-#define FTS_PEN_EN                              0
-
-/*
- * Gesture function enable
- * default: disable
- */
-#define FTS_GESTURE_EN                          1
-
-/*
  * ESD check & protection
  * default: disable
  */

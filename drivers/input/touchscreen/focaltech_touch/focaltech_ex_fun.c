@@ -1285,41 +1285,6 @@ static ssize_t fts_log_level_store(
     return count;
 }
 
-/* fts_pen node */
-static ssize_t fts_pen_show(
-    struct device *dev, struct device_attribute *attr, char *buf)
-{
-    int count = 0;
-    struct fts_ts_data *ts_data = dev_get_drvdata(dev);
-    struct input_dev *input_dev = ts_data->input_dev;
-
-    mutex_lock(&input_dev->mutex);
-    count += snprintf(buf + count, PAGE_SIZE, "pen event:%s\n",
-                      ts_data->pen_etype ? "hover" : "default");
-    mutex_unlock(&input_dev->mutex);
-
-    return count;
-}
-
-static ssize_t fts_pen_store(
-    struct device *dev,
-    struct device_attribute *attr, const char *buf, size_t count)
-{
-    int value = 0;
-    struct fts_ts_data *ts_data = dev_get_drvdata(dev);
-    struct input_dev *input_dev = ts_data->input_dev;
-
-    FTS_FUNC_ENTER();
-    mutex_lock(&input_dev->mutex);
-    sscanf(buf, "%d", &value);
-    FTS_DEBUG("pen event:%d->%d", ts_data->pen_etype, value);
-    ts_data->pen_etype = value;
-    mutex_unlock(&input_dev->mutex);
-    FTS_FUNC_EXIT();
-
-    return count;
-}
-
 /* fts_touch_size node */
 static ssize_t fts_touchsize_show(
     struct device *dev, struct device_attribute *attr, char *buf)
@@ -1430,7 +1395,6 @@ static DEVICE_ATTR(fts_irq, S_IRUGO | S_IWUSR, fts_irq_show, fts_irq_store);
 static DEVICE_ATTR(fts_boot_mode, S_IRUGO | S_IWUSR, fts_bootmode_show, fts_bootmode_store);
 static DEVICE_ATTR(fts_touch_point, S_IRUGO | S_IWUSR, fts_tpbuf_show, fts_tpbuf_store);
 static DEVICE_ATTR(fts_log_level, S_IRUGO | S_IWUSR, fts_log_level_show, fts_log_level_store);
-static DEVICE_ATTR(fts_pen, S_IRUGO | S_IWUSR, fts_pen_show, fts_pen_store);
 static DEVICE_ATTR(fts_touch_size, S_IRUGO | S_IWUSR, fts_touchsize_show, fts_touchsize_store);
 static DEVICE_ATTR(fts_ta_mode, S_IRUGO | S_IWUSR, fts_tamode_show, fts_tamode_store);
 static DEVICE_ATTR(fts_parse_coordinate, S_IRUGO, fts_coordinate_show,NULL);
@@ -1448,7 +1412,6 @@ static struct attribute *fts_attributes[] = {
     &dev_attr_fts_boot_mode.attr,
     &dev_attr_fts_touch_point.attr,
     &dev_attr_fts_log_level.attr,
-    &dev_attr_fts_pen.attr,
     &dev_attr_fts_touch_size.attr,
     &dev_attr_fts_ta_mode.attr,
     &dev_attr_fts_parse_coordinate.attr,

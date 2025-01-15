@@ -445,12 +445,6 @@ void fts_release_all_finger(void)
     input_report_key(input_dev, BTN_TOUCH, 0);
     input_sync(input_dev);
 
-#if FTS_PEN_EN
-    input_report_key(ts_data->pen_dev, BTN_TOOL_PEN, 0);
-    input_report_key(ts_data->pen_dev, BTN_TOUCH, 0);
-    input_sync(ts_data->pen_dev);
-#endif
-
     ts_data->touch_points = 0;
     ts_data->key_state = 0;
     mutex_unlock(&ts_data->report_mutex);
@@ -613,80 +607,6 @@ static int fts_input_report_a(struct fts_ts_data *ts_data, struct ts_event *even
 }
 #endif
 
-#if FTS_PEN_EN
-static int fts_input_pen_report(struct fts_ts_data *ts_data, u8 *pen_buf)
-{
-    struct input_dev *pen_dev = ts_data->pen_dev;
-    struct pen_event *pevt = &ts_data->pevent;
-
-    /*get information of stylus*/
-    pevt->inrange = (pen_buf[2] & 0x20) ? 1 : 0;
-    pevt->tip = (pen_buf[2] & 0x01) ? 1 : 0;
-    pevt->flag = pen_buf[3] >> 6;
-    pevt->id = pen_buf[5] >> 4;
-    pevt->x = ((pen_buf[3] & 0x0F) << 8) + pen_buf[4];
-    pevt->y = ((pen_buf[5] & 0x0F) << 8) + pen_buf[6];
-    pevt->p = ((pen_buf[7] & 0x0F) << 8) + pen_buf[8];
-    pevt->tilt_x = (short)((pen_buf[9] << 8) + pen_buf[10]);
-    pevt->tilt_y = (short)((pen_buf[11] << 8) + pen_buf[12]);
-    pevt->azimuth = ((pen_buf[13] << 8) + pen_buf[14]);
-    pevt->tool_type = BTN_TOOL_PEN;
-
-    input_report_key(pen_dev, BTN_STYLUS, !!(pen_buf[2] & 0x02));
-    input_report_key(pen_dev, BTN_STYLUS2, !!(pen_buf[2] & 0x08));
-
-    switch (ts_data->pen_etype) {
-    case STYLUS_DEFAULT:
-        if (pevt->tip && pevt->p) {
-            if ((ts_data->log_level >= 2) || (!pevt->down))
-                FTS_DEBUG("[PEN]x:%d,y:%d,p:%d,tip:%d,flag:%d,tilt:%d,%d DOWN",
-                          pevt->x, pevt->y, pevt->p, pevt->tip, pevt->flag,
-                          pevt->tilt_x, pevt->tilt_y);
-            input_report_abs(pen_dev, ABS_X, pevt->x);
-            input_report_abs(pen_dev, ABS_Y, pevt->y);
-            input_report_abs(pen_dev, ABS_PRESSURE, pevt->p);
-            input_report_abs(pen_dev, ABS_TILT_X, pevt->tilt_x);
-            input_report_abs(pen_dev, ABS_TILT_Y, pevt->tilt_y);
-            input_report_key(pen_dev, BTN_TOUCH, 1);
-            input_report_key(pen_dev, BTN_TOOL_PEN, 1);
-            pevt->down = 1;
-        } else if (!pevt->tip && pevt->down) {
-            FTS_DEBUG("[PEN]x:%d,y:%d,p:%d,tip:%d,flag:%d,tilt:%d,%d UP",
-                      pevt->x, pevt->y, pevt->p, pevt->tip, pevt->flag,
-                      pevt->tilt_x, pevt->tilt_y);
-            input_report_abs(pen_dev, ABS_X, pevt->x);
-            input_report_abs(pen_dev, ABS_Y, pevt->y);
-            input_report_abs(pen_dev, ABS_PRESSURE, pevt->p);
-            input_report_key(pen_dev, BTN_TOUCH, 0);
-            input_report_key(pen_dev, BTN_TOOL_PEN, 0);
-            pevt->down = 0;
-        }
-        input_sync(pen_dev);
-        break;
-    case STYLUS_HOVER:
-        if (ts_data->log_level >= 1)
-            FTS_DEBUG("[PEN][%02X]x:%d,y:%d,p:%d,tip:%d,flag:%d,tilt:%d,%d,%d",
-                      pen_buf[2], pevt->x, pevt->y, pevt->p, pevt->tip,
-                      pevt->flag, pevt->tilt_x, pevt->tilt_y, pevt->azimuth);
-        input_report_abs(pen_dev, ABS_X, pevt->x);
-        input_report_abs(pen_dev, ABS_Y, pevt->y);
-        input_report_abs(pen_dev, ABS_Z, pevt->azimuth);
-        input_report_abs(pen_dev, ABS_PRESSURE, pevt->p);
-        input_report_abs(pen_dev, ABS_TILT_X, pevt->tilt_x);
-        input_report_abs(pen_dev, ABS_TILT_Y, pevt->tilt_y);
-        input_report_key(pen_dev, BTN_TOOL_PEN, EVENT_DOWN(pevt->flag));
-        input_report_key(pen_dev, BTN_TOUCH, pevt->tip);
-        input_sync(pen_dev);
-        break;
-    default:
-        FTS_ERROR("Unknown stylus event");
-        break;
-    }
-
-    return 0;
-}
-#endif
-
 static int fts_read_touchdata(struct fts_ts_data *ts_data, u8 *buf)
 {
     int ret = 0;
@@ -803,14 +723,6 @@ static int fts_irq_read_report(struct fts_ts_data *ts_data)
 #endif
         mutex_unlock(&ts_data->report_mutex);
         break;
-
-#if FTS_PEN_EN
-    case TOUCH_PEN:
-        mutex_lock(&ts_data->report_mutex);
-        fts_input_pen_report(ts_data, touch_buf);
-        mutex_unlock(&ts_data->report_mutex);
-        break;
-#endif
 
     case TOUCH_EVENT_NUM:
         event_num = touch_buf[FTS_TOUCH_E_NUM] & 0x0F;
@@ -954,52 +866,6 @@ static int fts_irq_registration(struct fts_ts_data *ts_data)
     return ret;
 }
 
-#if FTS_PEN_EN
-static int fts_input_pen_init(struct fts_ts_data *ts_data)
-{
-    int ret = 0;
-    struct input_dev *pen_dev;
-    struct fts_ts_platform_data *pdata = ts_data->pdata;
-
-    FTS_FUNC_ENTER();
-    pen_dev = input_allocate_device();
-    if (!pen_dev) {
-        FTS_ERROR("Failed to allocate memory for input_pen device");
-        return -ENOMEM;
-    }
-
-    pen_dev->dev.parent = ts_data->dev;
-    pen_dev->name = FTS_DRIVER_PEN_NAME;
-    pen_dev->evbit[0] |= BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
-    __set_bit(ABS_X, pen_dev->absbit);
-    __set_bit(ABS_Y, pen_dev->absbit);
-    __set_bit(BTN_STYLUS, pen_dev->keybit);
-    __set_bit(BTN_STYLUS2, pen_dev->keybit);
-    __set_bit(BTN_TOUCH, pen_dev->keybit);
-    __set_bit(BTN_TOOL_PEN, pen_dev->keybit);
-    __set_bit(INPUT_PROP_DIRECT, pen_dev->propbit);
-    input_set_abs_params(pen_dev, ABS_X, pdata->x_min, pdata->x_max, 0, 0);
-    input_set_abs_params(pen_dev, ABS_Y, pdata->y_min, pdata->y_max, 0, 0);
-    input_set_abs_params(pen_dev, ABS_PRESSURE, 0, 4096, 0, 0);
-    input_set_abs_params(pen_dev, ABS_TILT_X, -9000, 9000, 0, 0);
-    input_set_abs_params(pen_dev, ABS_TILT_Y, -9000, 9000, 0, 0);
-    input_set_abs_params(pen_dev, ABS_Z, 0, 36000, 0, 0);
-
-    ret = input_register_device(pen_dev);
-    if (ret) {
-        FTS_ERROR("Input device registration failed");
-        input_free_device(pen_dev);
-        pen_dev = NULL;
-        return ret;
-    }
-
-    ts_data->pen_dev = pen_dev;
-    ts_data->pen_etype = STYLUS_DEFAULT;
-    FTS_FUNC_EXIT();
-    return 0;
-}
-#endif
-
 static int fts_input_init(struct fts_ts_data *ts_data)
 {
     int ret = 0;
@@ -1056,17 +922,6 @@ static int fts_input_init(struct fts_ts_data *ts_data)
         input_dev = NULL;
         return ret;
     }
-
-#if FTS_PEN_EN
-    ret = fts_input_pen_init(ts_data);
-    if (ret) {
-        FTS_ERROR("Input-pen device registration failed");
-        input_set_drvdata(input_dev, NULL);
-        input_free_device(input_dev);
-        input_dev = NULL;
-        return ret;
-    }
-#endif
 
     ts_data->input_dev = input_dev;
     FTS_FUNC_EXIT();
@@ -1675,9 +1530,6 @@ err_gpio_config:
     kfree_safe(ts_data->touch_buf);
 err_buffer_init:
     input_unregister_device(ts_data->input_dev);
-#if FTS_PEN_EN
-    input_unregister_device(ts_data->pen_dev);
-#endif
 err_input_init:
     if (ts_data->ts_workqueue)
         destroy_workqueue(ts_data->ts_workqueue);
@@ -1713,9 +1565,6 @@ static int fts_ts_remove_entry(struct fts_ts_data *ts_data)
     fts_bus_exit(ts_data);
 
     input_unregister_device(ts_data->input_dev);
-#if FTS_PEN_EN
-    input_unregister_device(ts_data->pen_dev);
-#endif
 
     if (ts_data->ts_workqueue)
         destroy_workqueue(ts_data->ts_workqueue);

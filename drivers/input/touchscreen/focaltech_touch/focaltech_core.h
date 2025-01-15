@@ -73,7 +73,6 @@
 #define FTS_ONE_TCH_LEN                     6
 #define FTS_TOUCH_DATA_LEN  (FTS_MAX_POINTS_SUPPORT * FTS_ONE_TCH_LEN + 2)
 
-#define FTS_SIZE_PEN                        15
 #define FTS_SIZE_DEFAULT                    15
 
 #define FTS_MAX_ID                          0x0A
@@ -149,21 +148,6 @@ struct ts_event {
     int area;
 };
 
-struct pen_event {
-    int down;
-    int inrange;
-    int tip;
-    int x;      /*x coordinate */
-    int y;      /*y coordinate */
-    int p;      /* pressure */
-    int flag;   /* touch event flag: 0 -- down; 1-- up; 2 -- contact */
-    int id;     /*touch ID */
-    int tilt_x;
-    int tilt_y;
-    int azimuth;
-    int tool_type;
-};
-
 struct fts_fod_info {
     u8 fp_id;
     u8 event_type;
@@ -180,7 +164,6 @@ struct fts_ts_data {
     struct spi_device *spi;
     struct device *dev;
     struct input_dev *input_dev;
-    struct input_dev *pen_dev;
     struct fts_ts_platform_data *pdata;
     struct ts_ic_info ic_info;
     struct workqueue_struct *ts_workqueue;
@@ -217,8 +200,6 @@ struct fts_ts_data {
     u8 edge_mode;
     u8 blank_up;
 
-    u8 pen_etype;
-    struct pen_event pevent;
     struct ts_event events[FTS_MAX_POINTS_SUPPORT];    /* multi-touch */
     u8 touch_addr;
     u32 touch_size;
@@ -262,7 +243,6 @@ enum _FTS_TOUCH_ETYPE {
     TOUCH_DEFAULT = 0x00,
     TOUCH_EVENT_NUM = 0x02,
     TOUCH_EXTRA_MSG = 0x08,
-    TOUCH_PEN = 0x0B,
     TOUCH_FW_INIT = 0x81,
     TOUCH_IGNORE = 0xFE,
     TOUCH_ERROR = 0xFF,
