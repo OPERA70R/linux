@@ -1200,9 +1200,6 @@ static ssize_t fts_dumpreg_show(
     fts_read_reg(FTS_REG_VENDOR_ID, &val);
     count += snprintf(buf + count, PAGE_SIZE, "Vendor ID:0x%02x\n", val);
 
-    fts_read_reg(FTS_REG_GESTURE_EN, &val);
-    count += snprintf(buf + count, PAGE_SIZE, "Gesture Mode:0x%02x\n", val);
-
     fts_read_reg(FTS_REG_CHARGER_MODE_EN, &val);
     count += snprintf(buf + count, PAGE_SIZE, "charge stat:0x%02x\n", val);
 
@@ -1352,8 +1349,7 @@ static ssize_t fts_touchsize_store(
     if ((value > 2) && (value < FTS_MAX_TOUCH_BUF)) {
         FTS_DEBUG("touch size:%d->%d", ts_data->touch_size, value);
         ts_data->touch_size = value;
-    } else
-        FTS_DEBUG("touch size:%d invalid", value);
+    } else {FTS_DEBUG("touch size:%d invalid", value); }
     mutex_unlock(&input_dev->mutex);
     FTS_FUNC_EXIT();
 

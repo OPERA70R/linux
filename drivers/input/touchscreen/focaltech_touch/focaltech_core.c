@@ -134,8 +134,9 @@ int fts_wait_tp_to_valid(void)
         if ((idh == chip_idh) || (fts_check_cid(ts_data, idh) == 0)) {
             FTS_INFO("TP Ready,Device ID:0x%02x", idh);
             return 0;
-        } else
+        } else {
             FTS_DEBUG("TP Not Ready,ReadData:0x%02x,ret:%d", idh, ret);
+        }
 
         cnt++;
         msleep(INTERVAL_READ_REG);
@@ -160,8 +161,6 @@ void fts_tp_state_recovery(struct fts_ts_data *ts_data)
     /* recover TP glove state 0xC0 */
     /* recover TP cover state 0xC1 */
     fts_ex_mode_recovery(ts_data);
-    /* recover TP gesture state 0xD0 */
-    fts_gesture_recovery(ts_data);
     FTS_FUNC_EXIT();
 }
 
@@ -538,14 +537,14 @@ static int fts_input_report_b(struct fts_ts_data *ts_data, struct ts_event *even
             input_mt_slot(input_dev, events[i].id);
             input_mt_report_slot_state(input_dev, MT_TOOL_FINGER, false);
             touch_point_pre &= ~(1 << events[i].id);
-            if (ts_data->log_level >= 1) FTS_DEBUG("[B]P%d UP!", events[i].id);
+            if (ts_data->log_level >= 1) {FTS_DEBUG("[B]P%d UP!", events[i].id);}
         }
     }
 
     if (unlikely(touch_point_pre ^ touch_down_point_cur)) {
         for (i = 0; i < max_touch_num; i++)  {
             if ((1 << i) & (touch_point_pre ^ touch_down_point_cur)) {
-                if (ts_data->log_level >= 1) FTS_DEBUG("[B]P%d UP!", i);
+                if (ts_data->log_level >= 1) {FTS_DEBUG("[B]P%d UP!", i);}
                 input_mt_slot(input_dev, i);
                 input_mt_report_slot_state(input_dev, MT_TOOL_FINGER, false);
             }
@@ -555,8 +554,9 @@ static int fts_input_report_b(struct fts_ts_data *ts_data, struct ts_event *even
     if (touch_down_point_cur)
         input_report_key(input_dev, BTN_TOUCH, 1);
     else if (touch_event_coordinate || ts_data->touch_points) {
-        if (ts_data->touch_points && (ts_data->log_level >= 1))
+        if (ts_data->touch_points && (ts_data->log_level >= 1)) {
             FTS_DEBUG("[B]Points All Up!");
+        }
         input_report_key(input_dev, BTN_TOUCH, 0);
     }
 
@@ -714,7 +714,6 @@ static int fts_read_touchdata(struct fts_ts_data *ts_data, u8 *buf)
 static int fts_read_parse_touchdata(struct fts_ts_data *ts_data, u8 *touch_buf)
 {
     int ret = 0;
-    u8 gesture_en = 0xFF;
 
     memset(touch_buf, 0xFF, FTS_MAX_TOUCH_BUF);
     ts_data->ta_size = ts_data->touch_size;
@@ -731,15 +730,6 @@ static int fts_read_parse_touchdata(struct fts_ts_data *ts_data, u8 *touch_buf)
 
     if (ret)
         return TOUCH_IGNORE;
-
-    /*gesture*/
-    if (ts_data->suspended && ts_data->gesture_support) {
-        ret = fts_read_reg(FTS_REG_GESTURE_EN, &gesture_en);
-        if ((ret >= 0) && (gesture_en == ENABLE))
-            return TOUCH_GESTURE;
-        else
-            FTS_DEBUG("gesture not enable in fw, don't process gesture");
-    }
 
     if ((touch_buf[1] == 0xFF) && (touch_buf[2] == 0xFF)
         && (touch_buf[3] == 0xFF) && (touch_buf[4] == 0xFF)) {
@@ -903,12 +893,6 @@ static int fts_irq_read_report(struct fts_ts_data *ts_data)
         mutex_unlock(&ts_data->report_mutex);
         break;
 
-    case TOUCH_GESTURE:
-        if (0 == fts_gesture_readdata(ts_data, touch_buf)) {
-            FTS_INFO("succuss to get gesture data in irq handler");
-        }
-        break;
-
     case TOUCH_FW_INIT:
         fts_release_all_finger();
         fts_tp_state_recovery(ts_data);
@@ -942,11 +926,6 @@ static irqreturn_t fts_irq_handler(int irq, void *data)
         }
     }
 #endif
-    if ((ts_data->suspended) && (ts_data->gesture_support)) {
-        pm_stay_awake(ts_data->dev);
-        schedule_delayed_work(&ts_data->gesture_work,msecs_to_jiffies(2000));
-        msleep(100);
-    }
     ts_data->intr_jiffies = jiffies;
     fts_prc_queue_work(ts_data);
     fts_irq_read_report(ts_data);
@@ -1625,11 +1604,6 @@ static int fts_ts_probe_entry(struct fts_ts_data *ts_data)
         FTS_ERROR("init glove/cover/charger fail");
     }
 
-    ret = fts_gesture_init(ts_data);
-    if (ret) {
-        FTS_ERROR("init gesture fail");
-    }
-
 #if FTS_TEST_EN
     ret = fts_test_init(ts_data);
     if (ret) {
@@ -1734,8 +1708,6 @@ static int fts_ts_remove_entry(struct fts_ts_data *ts_data)
 
     fts_esdcheck_exit(ts_data);
 
-    fts_gesture_exit(ts_data);
-
     free_irq(ts_data->irq, ts_data);
 
     fts_bus_exit(ts_data);
@@ -1796,24 +1768,15 @@ static int fts_ts_suspend(struct device *dev)
         return 0;
     }
 
-    fts_esdcheck_suspend(ts_data);
+    FTS_INFO("make TP enter into sleep mode");
+    ret = fts_write_reg(FTS_REG_POWER_MODE, FTS_REG_POWER_MODE_SLEEP);
+    if (ret < 0)
+        FTS_ERROR("set TP to sleep mode fail, ret=%d", ret);
 
-    if (ts_data->gesture_support) {
-        fts_gesture_suspend(ts_data);
-    } else {
-
-        FTS_INFO("make TP enter into sleep mode");
-        ret = fts_write_reg(FTS_REG_POWER_MODE, FTS_REG_POWER_MODE_SLEEP);
-        if (ret < 0)
-            FTS_ERROR("set TP to sleep mode fail, ret=%d", ret);
-
-        if (!ts_data->ic_info.is_incell) {
-#if FTS_POWER_SOURCE_CUST_EN
-            ret = fts_power_suspend(ts_data);
-            if (ret < 0) {
-                FTS_ERROR("power enter suspend fail");
-            }
-#endif
+    if (!ts_data->ic_info.is_incell) {
+        ret = fts_power_suspend(ts_data);
+        if (ret < 0) {
+            FTS_ERROR("power enter suspend fail");
         }
     }
 
@@ -1831,8 +1794,6 @@ static int fts_ts_resume(struct device *dev)
     FTS_INFO("down flag = %d,blank flag = %d", ts_data->fod_info.fp_down_report, ts_data->blank_up);
     if((ts_data->fod_info.fp_down_report) && (ts_data->blank_up)){
         ts_data->fod_info.fp_down_report = 0;
-        FTS_DEBUG("Gesture Code up supplement=%d", ts_data->fod_gesture_id);
-        input_report_key(input_dev, ts_data->fod_gesture_id, 0);
         input_sync(input_dev);
     }
     FTS_FUNC_ENTER();
@@ -1855,10 +1816,6 @@ static int fts_ts_resume(struct device *dev)
     fts_ex_mode_recovery(ts_data);
 
     fts_esdcheck_resume(ts_data);
-
-    if (ts_data->gesture_support) {
-        fts_gesture_resume(ts_data);
-    }
 
     FTS_FUNC_EXIT();
     ts_data->blank_up = 0;
@@ -1892,13 +1849,6 @@ static const struct dev_pm_ops fts_dev_pm_ops = {
 };
 #endif
 
-static void gesture_work_func(struct work_struct *work)
-{
-    struct fts_ts_data *ts_data = fts_data;
-    FTS_INFO("enter pm relax!\n");
-    pm_relax(ts_data->dev);
-}
-
 /*****************************************************************************
 * TP Driver
 *****************************************************************************/
@@ -1917,13 +1867,13 @@ static int fts_ts_probe(struct spi_device *spi)
     if (!ts_data)
         return -ENOMEM;
 
-    /* Request reset GPIO */
+    /* Get reset GPIO */
 	ts_data->reset_gpio = devm_gpiod_get_optional(&spi->dev, "reset", GPIOD_OUT_HIGH);
 	if (IS_ERR(ts_data->reset_gpio))
 		return dev_err_probe(&spi->dev, PTR_ERR(ts_data->reset_gpio),
-				     "Failed to request reset gpio\n");
+				     "Failed to get reset gpio\n");
 
-    /* Request regulators */
+    /* Get regulators */
 	ret = devm_regulator_bulk_get_const(&spi->dev,
 					    ARRAY_SIZE(fts_tp_supplies),
 					    fts_tp_supplies,
@@ -1951,7 +1901,6 @@ static int fts_ts_probe(struct spi_device *spi)
         return ret;
     }
     device_init_wakeup(ts_data->dev,true);
-    INIT_DELAYED_WORK(&ts_data->gesture_work, gesture_work_func);
     FTS_INFO("Touch Screen(SPI BUS) driver prboe successfully");
 
     return 0;

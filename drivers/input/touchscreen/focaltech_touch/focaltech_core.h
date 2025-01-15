@@ -73,9 +73,6 @@
 #define FTS_ONE_TCH_LEN                     6
 #define FTS_TOUCH_DATA_LEN  (FTS_MAX_POINTS_SUPPORT * FTS_ONE_TCH_LEN + 2)
 
-#define FTS_GESTURE_POINTS_MAX              6
-#define FTS_GESTURE_DATA_LEN               (FTS_GESTURE_POINTS_MAX * 4 + 4)
-
 #define FTS_SIZE_PEN                        15
 #define FTS_SIZE_DEFAULT                    15
 
@@ -190,7 +187,6 @@ struct fts_ts_data {
     struct work_struct fwupg_work;
     struct delayed_work esdcheck_work;
     struct delayed_work prc_work;
-    struct delayed_work gesture_work;
     struct work_struct resume_work;
     wait_queue_head_t ts_waitqueue;
     struct ftxxxx_proc proc;
@@ -219,9 +215,6 @@ struct fts_ts_data {
     bool prc_mode;
     bool esd_support;
     u8 edge_mode;
-    bool gesture_support;   /* gesture enable or disable, default: disable */
-    u8 gesture_bmode;       /*gesture buffer mode*/
-    u8 fod_gesture_id;
     u8 blank_up;
 
     u8 pen_etype;
@@ -270,7 +263,6 @@ enum _FTS_TOUCH_ETYPE {
     TOUCH_EVENT_NUM = 0x02,
     TOUCH_EXTRA_MSG = 0x08,
     TOUCH_PEN = 0x0B,
-    TOUCH_GESTURE = 0x80,
     TOUCH_FW_INIT = 0x81,
     TOUCH_IGNORE = 0xFE,
     TOUCH_ERROR = 0xFF,
@@ -279,11 +271,6 @@ enum _FTS_TOUCH_ETYPE {
 enum _FTS_STYLUS_ETYPE {
     STYLUS_DEFAULT,
     STYLUS_HOVER,
-};
-
-enum _FTS_GESTURE_BMODE {
-    GESTURE_BM_REG,
-    GESTURE_BM_TOUCH,
 };
 
 static const struct regulator_bulk_data fts_tp_supplies[] = {
@@ -305,14 +292,6 @@ void fts_hid2std(void);
 int fts_bus_init(struct fts_ts_data *ts_data);
 int fts_bus_exit(struct fts_ts_data *ts_data);
 int fts_spi_transfer_direct(u8 *writebuf, u32 writelen, u8 *readbuf, u32 readlen);
-
-/* Gesture functions */
-int fts_gesture_init(struct fts_ts_data *ts_data);
-int fts_gesture_exit(struct fts_ts_data *ts_data);
-void fts_gesture_recovery(struct fts_ts_data *ts_data);
-int fts_gesture_readdata(struct fts_ts_data *ts_data, u8 *data);
-int fts_gesture_suspend(struct fts_ts_data *ts_data);
-int fts_gesture_resume(struct fts_ts_data *ts_data);
 
 /* Apk and functions */
 int fts_create_apk_debug_channel(struct fts_ts_data *);

@@ -68,9 +68,10 @@ static void fts_prc_func(struct work_struct *work)
         if (time_after(cur_jiffies, intr_timeout)) {
             if (ts_data->touch_points) {
                 fts_release_all_finger();
-                if (ts_data->log_level >= 3)
+                if (ts_data->log_level >= 3) {
                     FTS_DEBUG("prc trigger interval:%dms",
                               jiffies_to_msecs(cur_jiffies - ts_data->intr_jiffies));
+                }
             }
             ts_data->prc_mode = 0;
         } else {
