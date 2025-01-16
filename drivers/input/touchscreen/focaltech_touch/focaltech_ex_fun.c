@@ -99,14 +99,14 @@ static ssize_t fts_debug_write(
     struct ftxxxx_proc *proc = &ts_data->proc;
 
     if (buflen < 1) {
-        FTS_ERROR("apk proc count(%d) fail", buflen);
+        dev_err(ts_data->dev, "apk proc count(%d) fail", buflen);
         return -EINVAL;
     }
 
     if (buflen > PROC_BUF_SIZE) {
         writebuf = (u8 *)kzalloc(buflen * sizeof(u8), GFP_KERNEL);
         if (NULL == writebuf) {
-            FTS_ERROR("apk proc wirte buf zalloc fail");
+            dev_err(ts_data->dev, "apk proc wirte buf zalloc fail");
             return -ENOMEM;
         }
     } else {
@@ -114,7 +114,7 @@ static ssize_t fts_debug_write(
     }
 
     if (copy_from_user(writebuf, buff, buflen)) {
-        FTS_ERROR("[APK]: copy from user error!!");
+        dev_err(ts_data->dev, "[APK]: copy from user error!!");
         ret = -EFAULT;
         goto proc_write_err;
     }
@@ -127,7 +127,7 @@ static ssize_t fts_debug_write(
 
     switch (proc->opmode) {
     case PROC_SET_TEST_FLAG:
-        FTS_DEBUG("[APK]: PROC_SET_TEST_FLAG = %x", writebuf[1]);
+        dev_dbg(ts_data->dev, "[APK]: PROC_SET_TEST_FLAG = %x", writebuf[1]);
         break;
 
     case PROC_READ_REGISTER:
@@ -137,7 +137,7 @@ static ssize_t fts_debug_write(
     case PROC_WRITE_REGISTER:
         ret = fts_write_reg(writebuf[1], writebuf[2]);
         if (ret < 0) {
-            FTS_ERROR("PROC_WRITE_REGISTER write error");
+            dev_err(ts_data->dev, "PROC_WRITE_REGISTER write error");
             goto proc_write_err;
         }
         break;
@@ -145,7 +145,7 @@ static ssize_t fts_debug_write(
     case PROC_READ_DATA:
         writelen = buflen - 1;
         if (writelen >= FTS_MAX_COMMMAND_LENGTH) {
-            FTS_ERROR("cmd(PROC_READ_DATA) length(%d) fail", writelen);
+            dev_err(ts_data->dev, "cmd(PROC_READ_DATA) length(%d) fail", writelen);
             goto proc_write_err;
         }
         memcpy(proc->cmd, writebuf + 1, writelen);
@@ -156,7 +156,7 @@ static ssize_t fts_debug_write(
         writelen = buflen - 1;
         ret = fts_write(writebuf + 1, writelen);
         if (ret < 0) {
-            FTS_ERROR("PROC_WRITE_DATA write error");
+            dev_err(ts_data->dev, "PROC_WRITE_DATA write error");
             goto proc_write_err;
         }
         break;
@@ -166,14 +166,14 @@ static ssize_t fts_debug_write(
             snprintf(tmp, PROC_BUF_SIZE, "%s", writebuf + 1);
             tmp[buflen - 1] = '\0';
             if (strncmp(tmp, "focal_driver", 12) == 0) {
-                FTS_INFO("APK execute HW Reset");
+                dev_info(ts_data->dev, "APK execute HW Reset");
                 fts_reset_proc(ts_data,0);
             }
         }
         break;
 
     case PROC_SET_BOOT_MODE:
-        FTS_DEBUG("[APK]: PROC_SET_BOOT_MODE = %x", writebuf[1]);
+        dev_dbg(ts_data->dev, "[APK]: PROC_SET_BOOT_MODE = %x", writebuf[1]);
         if (0 == writebuf[1]) {
             ts_data->fw_is_running = true;
         } else {
@@ -181,7 +181,7 @@ static ssize_t fts_debug_write(
         }
         break;
     case PROC_ENTER_TEST_ENVIRONMENT:
-        FTS_DEBUG("[APK]: PROC_ENTER_TEST_ENVIRONMENT = %x", writebuf[1]);
+        dev_dbg(ts_data->dev, "[APK]: PROC_ENTER_TEST_ENVIRONMENT = %x", writebuf[1]);
         if (0 == writebuf[1]) {
             fts_enter_test_environment(0);
         } else {
@@ -192,7 +192,7 @@ static ssize_t fts_debug_write(
     case PROC_READ_DATA_DIRECT:
         writelen = buflen - 1;
         if (writelen >= FTS_MAX_COMMMAND_LENGTH) {
-            FTS_ERROR("cmd(PROC_READ_DATA_DIRECT) length(%d) fail", writelen);
+            dev_err(ts_data->dev, "cmd(PROC_READ_DATA_DIRECT) length(%d) fail", writelen);
             goto proc_write_err;
         }
         memcpy(proc->cmd, writebuf + 1, writelen);
@@ -203,7 +203,7 @@ static ssize_t fts_debug_write(
         writelen = buflen - 1;
         ret = fts_spi_transfer_direct(writebuf + 1, writelen, NULL, 0);
         if (ret < 0) {
-            FTS_ERROR("PROC_WRITE_DATA_DIRECT write error");
+            dev_err(ts_data->dev, "PROC_WRITE_DATA_DIRECT write error");
             goto proc_write_err;
         }
         break;
@@ -212,11 +212,11 @@ static ssize_t fts_debug_write(
         ts_data->spi->mode = writebuf[1];
         ts_data->spi->bits_per_word = writebuf[2];
         ts_data->spi->max_speed_hz = *(u32 *)(writebuf + 4);
-        FTS_INFO("spi,mode=%d,bits=%d,speed=%d", ts_data->spi->mode,
+        dev_info(ts_data->dev, "spi,mode=%d,bits=%d,speed=%d", ts_data->spi->mode,
                  ts_data->spi->bits_per_word, ts_data->spi->max_speed_hz);
         ret = spi_setup(ts_data->spi);
         if (ret) {
-            FTS_ERROR("spi setup fail");
+            dev_err(ts_data->dev, "spi setup fail");
             goto proc_write_err;
         }
         break;
@@ -253,14 +253,14 @@ static ssize_t fts_debug_read(
     struct ftxxxx_proc *proc = &ts_data->proc;
 
     if (buflen <= 0) {
-        FTS_ERROR("apk proc read count(%d) fail", buflen);
+        dev_err(ts_data->dev, "apk proc read count(%d) fail", buflen);
         return -EINVAL;
     }
 
     if (buflen > PROC_BUF_SIZE) {
         readbuf = (u8 *)kzalloc(buflen * sizeof(u8), GFP_KERNEL);
         if (NULL == readbuf) {
-            FTS_ERROR("apk proc buf zalloc fail");
+            dev_err(ts_data->dev, "apk proc buf zalloc fail");
             return -ENOMEM;
         }
     } else {
@@ -272,7 +272,7 @@ static ssize_t fts_debug_read(
         num_read_chars = 1;
         ret = fts_read_reg(proc->cmd[0], &readbuf[0]);
         if (ret < 0) {
-            FTS_ERROR("PROC_READ_REGISTER read error");
+            dev_err(ts_data->dev, "PROC_READ_REGISTER read error");
             goto proc_read_err;
         }
         break;
@@ -281,7 +281,7 @@ static ssize_t fts_debug_read(
         num_read_chars = buflen;
         ret = fts_read(proc->cmd, proc->cmd_len, readbuf, num_read_chars);
         if (ret < 0) {
-            FTS_ERROR("PROC_READ_DATA read error");
+            dev_err(ts_data->dev, "PROC_READ_DATA read error");
             goto proc_read_err;
         }
         break;
@@ -290,7 +290,7 @@ static ssize_t fts_debug_read(
         num_read_chars = buflen;
         ret = fts_spi_transfer_direct(proc->cmd, proc->cmd_len, readbuf, num_read_chars);
         if (ret < 0) {
-            FTS_ERROR("PROC_READ_DATA_DIRECT read error");
+            dev_err(ts_data->dev, "PROC_READ_DATA_DIRECT read error");
             goto proc_read_err;
         }
         break;
@@ -310,7 +310,7 @@ static ssize_t fts_debug_read(
     ret = num_read_chars;
 proc_read_err:
     if ((num_read_chars > 0) && copy_to_user(buff, readbuf, num_read_chars)) {
-        FTS_ERROR("copy to user error");
+        dev_err(ts_data->dev, "copy to user error");
         ret = -EFAULT;
     }
 
@@ -331,10 +331,10 @@ static int fts_ta_open(struct inode *inode, struct file *file)
     struct fts_ts_data *ts_data = pde_data(inode);
 
     if (ts_data->touch_analysis_support) {
-        FTS_INFO("fts_ta open");
+        dev_info(ts_data->dev, "fts_ta open");
         ts_data->ta_buf = kzalloc(FTS_MAX_TOUCH_BUF, GFP_KERNEL);
         if (!ts_data->ta_buf) {
-            FTS_ERROR("kzalloc for ta_buf fails");
+            dev_err(ts_data->dev, "kzalloc for ta_buf fails");
             return -ENOMEM;
         }
     }
@@ -346,7 +346,7 @@ static int fts_ta_release(struct inode *inode, struct file *file)
     struct fts_ts_data *ts_data = pde_data(inode);
 
     if (ts_data->touch_analysis_support) {
-        FTS_INFO("fts_ta close");
+        dev_info(ts_data->dev, "fts_ta close");
         ts_data->ta_flag = 0;
         if (ts_data->ta_buf) {
             kfree(ts_data->ta_buf);
@@ -363,7 +363,7 @@ static ssize_t fts_ta_read(
     struct fts_ts_data *ts_data = pde_data(file_inode(filp));
 
     if (!ts_data->touch_analysis_support || !ts_data->ta_buf) {
-        FTS_ERROR("touch_analysis is disabled, or ta_buf is NULL");
+        dev_err(ts_data->dev, "touch_analysis is disabled, or ta_buf is NULL");
         return -EINVAL;
     }
 
@@ -374,7 +374,7 @@ static ssize_t fts_ta_read(
 
     read_num = (ts_data->ta_size < read_num) ? ts_data->ta_size : read_num;
     if ((read_num > 0) && (copy_to_user(buff, ts_data->ta_buf, read_num))) {
-        FTS_ERROR("copy to user error");
+        dev_err(ts_data->dev, "copy to user error");
         return -EFAULT;
     }
 
@@ -393,18 +393,18 @@ int fts_create_apk_debug_channel(struct fts_ts_data *ts_data)
 
     proc->proc_entry = proc_create_data(PROC_NAME, 0777, NULL, &fts_proc_fops, ts_data);
     if (NULL == proc->proc_entry) {
-        FTS_ERROR("create proc entry fail");
+        dev_err(ts_data->dev, "create proc entry fail");
         return -ENOMEM;
     }
 
     ts_data->proc_ta.proc_entry = proc_create_data("fts_ta", 0777, NULL, \
                                   &fts_procta_fops, ts_data);
     if (!ts_data->proc_ta.proc_entry) {
-        FTS_ERROR("create proc_ta entry fail");
+        dev_err(ts_data->dev, "create proc_ta entry fail");
         return -ENOMEM;
     }
 
-    FTS_INFO("Create proc entry success!");
+    dev_info(ts_data->dev, "Create proc entry success!");
     return 0;
 }
 
@@ -467,10 +467,10 @@ static ssize_t fts_irq_store(
 
     mutex_lock(&input_dev->mutex);
     if (FTS_SYSFS_ECHO_ON(buf)) {
-        FTS_INFO("enable irq");
+        dev_info(ts_data->dev, "enable irq");
         fts_irq_enable();
     } else if (FTS_SYSFS_ECHO_OFF(buf)) {
-        FTS_INFO("disable irq");
+        dev_info(ts_data->dev, "disable irq");
         fts_irq_disable();
     }
     mutex_unlock(&input_dev->mutex);
@@ -485,17 +485,15 @@ static ssize_t fts_bootmode_store(
     struct fts_ts_data *ts_data = dev_get_drvdata(dev);
     struct input_dev *input_dev = ts_data->input_dev;
 
-    FTS_FUNC_ENTER();
     mutex_lock(&input_dev->mutex);
     if (FTS_SYSFS_ECHO_ON(buf)) {
-        FTS_INFO("[EX-FUN]set to boot mode");
+        dev_info(ts_data->dev, "[EX-FUN]set to boot mode");
         ts_data->fw_is_running = false;
     } else if (FTS_SYSFS_ECHO_OFF(buf)) {
-        FTS_INFO("[EX-FUN]set to fw mode");
+        dev_info(ts_data->dev, "[EX-FUN]set to fw mode");
         ts_data->fw_is_running = true;
     }
     mutex_unlock(&input_dev->mutex);
-    FTS_FUNC_EXIT();
 
     return count;
 }
@@ -507,7 +505,6 @@ static ssize_t fts_bootmode_show(
     struct fts_ts_data *ts_data = dev_get_drvdata(dev);
     struct input_dev *input_dev = ts_data->input_dev;
 
-    FTS_FUNC_ENTER();
     mutex_lock(&input_dev->mutex);
     if (true == ts_data->fw_is_running) {
         count = snprintf(buf, PAGE_SIZE, "tp is in fw mode\n");
@@ -515,7 +512,6 @@ static ssize_t fts_bootmode_show(
         count = snprintf(buf, PAGE_SIZE, "tp is in boot mode\n");
     }
     mutex_unlock(&input_dev->mutex);
-    FTS_FUNC_EXIT();
 
     return count;
 }
@@ -665,13 +661,13 @@ static int fts_parse_buf(const char *buf, size_t cmd_len)
     if (buf[0] == '1') {
         rw_op.len = length;
         rw_op.type = RWREG_OP_READ;
-        FTS_DEBUG("read %02X, %d bytes", rw_op.reg, rw_op.len);
+        dev_dbg(fts_data->dev, "read %02X, %d bytes", rw_op.reg, rw_op.len);
     } else {
         if (cmd_len < (length * 2 + 5)) {
             pr_err("data invalided!\n");
             return -EINVAL;
         }
-        FTS_DEBUG("write %02X, %d bytes", rw_op.reg, length);
+        dev_dbg(fts_data->dev, "write %02X, %d bytes", rw_op.reg, length);
 
         /* first byte is the register addr */
         rw_op.type = RWREG_OP_WRITE;
@@ -681,16 +677,16 @@ static int fts_parse_buf(const char *buf, size_t cmd_len)
     if (rw_op.len > 0) {
         tmpbuf = (char *)kzalloc(rw_op.len, GFP_KERNEL);
         if (!tmpbuf) {
-            FTS_ERROR("allocate memory failed!\n");
+            dev_err(fts_data->dev, "allocate memory failed!\n");
             return -ENOMEM;
         }
 
         if (RWREG_OP_WRITE == rw_op.type) {
             tmpbuf[0] = rw_op.reg & 0xFF;
-            FTS_DEBUG("write buffer: ");
+            dev_dbg(fts_data->dev, "write buffer: ");
             for (i = 1; i < rw_op.len; i++) {
                 tmpbuf[i] = shex_to_u8(buf + 5 + i * 2 - 2, 2);
-                FTS_DEBUG("buf[%d]: %02X", i, tmpbuf[i] & 0xFF);
+               dev_dbg(fts_data->dev, "buf[%d]: %02X", i, tmpbuf[i] & 0xFF);
             }
         }
         rw_op.opbuf = tmpbuf;
@@ -715,7 +711,7 @@ static ssize_t fts_tprwreg_store(
         rw_op.opbuf = NULL;
     }
 
-    FTS_DEBUG("cmd len: %d, buf: %s", (int)cmd_length, buf);
+    dev_dbg(fts_data->dev, "cmd len: %d, buf: %s", (int)cmd_length, buf);
     /* compatible old ops */
     if (2 == cmd_length) {
         rw_op.type = RWREG_OP_READ;
@@ -727,7 +723,7 @@ static ssize_t fts_tprwreg_store(
         rw_op.reg = shex_to_int(buf, 2);
         rw_op.val = shex_to_int(buf + 2, 2);
     } else if (cmd_length < 5) {
-        FTS_ERROR("Invalid cmd buffer");
+        dev_err(fts_data->dev, "Invalid cmd buffer");
         mutex_unlock(&input_dev->mutex);
         return -EINVAL;
     } else {
@@ -735,7 +731,7 @@ static ssize_t fts_tprwreg_store(
     }
 
     if (rw_op.len < 0) {
-        FTS_ERROR("cmd buffer error!");
+        dev_err(fts_data->dev, "cmd buffer error!");
 
     } else {
         if (RWREG_OP_READ == rw_op.type) {
@@ -752,9 +748,9 @@ static ssize_t fts_tprwreg_store(
             }
 
             if (rw_op.res < 0) {
-                FTS_ERROR("Could not read 0x%02x", rw_op.reg);
+                dev_err(fts_data->dev, "Could not read 0x%02x", rw_op.reg);
             } else {
-                FTS_INFO("read 0x%02x, %d bytes successful", rw_op.reg, rw_op.len);
+                dev_info(fts_data->dev, "read 0x%02x, %d bytes successful", rw_op.reg, rw_op.len);
                 rw_op.res = 0;
             }
 
@@ -768,10 +764,10 @@ static ssize_t fts_tprwreg_store(
                 rw_op.res = fts_write(rw_op.opbuf, rw_op.len);
             }
             if (rw_op.res < 0) {
-                FTS_ERROR("Could not write 0x%02x", rw_op.reg);
+                dev_err(fts_data->dev, "Could not write 0x%02x", rw_op.reg);
 
             } else {
-                FTS_INFO("Write 0x%02x, %d bytes successful", rw_op.val, rw_op.len);
+                dev_info(fts_data->dev, "Write 0x%02x, %d bytes successful", rw_op.val, rw_op.len);
                 rw_op.res = 0;
             }
         }
@@ -797,14 +793,14 @@ static ssize_t fts_fwupgradebin_store(
     struct input_dev *input_dev = ts_data->input_dev;
 
     if ((count <= 1) || (count >= FILE_NAME_LENGTH - 32)) {
-        FTS_ERROR("fw bin name's length(%d) fail", (int)count);
+        dev_err(fts_data->dev, "fw bin name's length(%d) fail", (int)count);
         return -EINVAL;
     }
     memset(fwname, 0, sizeof(fwname));
     snprintf(fwname, FILE_NAME_LENGTH, "%s", buf);
     fwname[count - 1] = '\0';
 
-    FTS_INFO("upgrade with bin file through sysfs node");
+    dev_info(fts_data->dev, "upgrade with bin file through sysfs node");
     mutex_lock(&input_dev->mutex);
     fts_upgrade_bin(fwname, 0);
     mutex_unlock(&input_dev->mutex);
@@ -828,14 +824,14 @@ static ssize_t fts_fwforceupg_store(
     struct input_dev *input_dev = ts_data->input_dev;
 
     if ((count <= 1) || (count >= FILE_NAME_LENGTH - 32)) {
-        FTS_ERROR("fw bin name's length(%d) fail", (int)count);
+        dev_err(fts_data->dev, "fw bin name's length(%d) fail", (int)count);
         return -EINVAL;
     }
     memset(fwname, 0, sizeof(fwname));
     snprintf(fwname, FILE_NAME_LENGTH, "%s", buf);
     fwname[count - 1] = '\0';
 
-    FTS_INFO("force upgrade through sysfs node");
+    dev_info(fts_data->dev, "force upgrade through sysfs node");
     mutex_lock(&input_dev->mutex);
     fts_upgrade_bin(fwname, 1);
     mutex_unlock(&input_dev->mutex);
@@ -993,13 +989,11 @@ static ssize_t fts_log_level_store(
     struct fts_ts_data *ts_data = dev_get_drvdata(dev);
     struct input_dev *input_dev = ts_data->input_dev;
 
-    FTS_FUNC_ENTER();
     mutex_lock(&input_dev->mutex);
     sscanf(buf, "%d", &value);
-    FTS_DEBUG("log level:%d->%d", ts_data->log_level, value);
+    dev_dbg(fts_data->dev, "log level:%d->%d", ts_data->log_level, value);
     ts_data->log_level = value;
     mutex_unlock(&input_dev->mutex);
-    FTS_FUNC_EXIT();
 
     return count;
 }
@@ -1027,15 +1021,13 @@ static ssize_t fts_touchsize_store(
     struct fts_ts_data *ts_data = dev_get_drvdata(dev);
     struct input_dev *input_dev = ts_data->input_dev;
 
-    FTS_FUNC_ENTER();
     mutex_lock(&input_dev->mutex);
     sscanf(buf, "%d", &value);
     if ((value > 2) && (value < FTS_MAX_TOUCH_BUF)) {
-        FTS_DEBUG("touch size:%d->%d", ts_data->touch_size, value);
+        dev_dbg(fts_data->dev, "touch size:%d->%d", ts_data->touch_size, value);
         ts_data->touch_size = value;
-    } else {FTS_DEBUG("touch size:%d invalid", value); }
+    } else {dev_dbg(fts_data->dev, "touch size:%d invalid", value); }
     mutex_unlock(&input_dev->mutex);
-    FTS_FUNC_EXIT();
 
     return count;
 }
@@ -1075,13 +1067,11 @@ static ssize_t fts_tamode_store(
     struct fts_ts_data *ts_data = dev_get_drvdata(dev);
     struct input_dev *input_dev = ts_data->input_dev;
 
-    FTS_FUNC_ENTER();
     mutex_lock(&input_dev->mutex);
     sscanf(buf, "%d", &value);
     ts_data->touch_analysis_support = !!value;
-    FTS_DEBUG("set touch analysis:%d", ts_data->touch_analysis_support);
+    dev_dbg(fts_data->dev, "set touch analysis:%d", ts_data->touch_analysis_support);
     mutex_unlock(&input_dev->mutex);
-    FTS_FUNC_EXIT();
 
     return count;
 }
@@ -1146,11 +1136,11 @@ int fts_create_sysfs(struct fts_ts_data *ts_data)
 
     ret = sysfs_create_group(&ts_data->dev->kobj, &fts_attribute_group);
     if (ret) {
-        FTS_ERROR("[EX]: sysfs_create_group() failed!!");
+        dev_err(fts_data->dev, "[EX]: sysfs_create_group() failed!!");
         sysfs_remove_group(&ts_data->dev->kobj, &fts_attribute_group);
         return -ENOMEM;
     } else {
-        FTS_INFO("[EX]: sysfs_create_group() succeeded!!");
+        dev_info(fts_data->dev, "[EX]: sysfs_create_group() succeeded!!");
     }
 
     return ret;

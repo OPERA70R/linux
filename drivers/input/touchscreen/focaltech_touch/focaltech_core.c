@@ -62,7 +62,6 @@
 * Private constant and macro definitions using #define
 *****************************************************************************/
 #define FTS_DRIVER_NAME			"fts_ts"
-#define FTS_DRIVER_PEN_NAME		"fts_ts,pen"
 #define INTERVAL_READ_REG		200  /* unit:ms */
 #define TIMEOUT_READ_REG		1000 /* unit:ms */
 #if defined(CONFIG_DRM)
@@ -124,11 +123,10 @@ int fts_wait_tp_to_valid(void)
 	do {
 		ret = fts_read_reg(FTS_REG_CHIP_ID, &idh);
 		if ((idh == chip_idh) || (fts_check_cid(ts_data, idh) == 0)) {
-			FTS_INFO("TP Ready,Device ID:0x%02x", idh);
+			dev_info(ts_data->dev, "TP Ready,Device ID:0x%02x", idh);
 			return 0;
-		} else {
-			FTS_DEBUG("TP Not Ready,ReadData:0x%02x,ret:%d", idh, ret);
-		}
+		} else
+			dev_dbg(ts_data->dev, "TP Not Ready,ReadData:0x%02x,ret:%d", idh, ret);
 
 		cnt++;
 		msleep(INTERVAL_READ_REG);
@@ -146,19 +144,17 @@ int fts_wait_tp_to_valid(void)
 *****************************************************************************/
 void fts_tp_state_recovery(struct fts_ts_data *ts_data)
 {
-	FTS_FUNC_ENTER();
 	/* wait tp stable */
 	fts_wait_tp_to_valid();
 	/* recover TP charger state 0x8B */
 	/* recover TP glove state 0xC0 */
 	/* recover TP cover state 0xC1 */
 	fts_ex_mode_recovery(ts_data);
-	FTS_FUNC_EXIT();
 }
 
-int fts_reset_proc(struct fts_ts_data *ts_data,int hdelayms)
+int fts_reset_proc(struct fts_ts_data *ts_data, int hdelayms)
 {
-	FTS_DEBUG("tp reset");
+	dev_dbg(ts_data->dev, "tp reset");
 	gpio_direction_output(fts_data->pdata->reset_gpio, 0);
 	msleep(1);
 	gpio_direction_output(fts_data->pdata->reset_gpio, 1);
@@ -172,7 +168,6 @@ void fts_irq_disable(void)
 {
 	unsigned long irqflags;
 
-	FTS_FUNC_ENTER();
 	spin_lock_irqsave(&fts_data->irq_lock, irqflags);
 
 	if (!fts_data->irq_disabled) {
@@ -181,14 +176,12 @@ void fts_irq_disable(void)
 	}
 
 	spin_unlock_irqrestore(&fts_data->irq_lock, irqflags);
-	FTS_FUNC_EXIT();
 }
 
 void fts_irq_enable(void)
 {
 	unsigned long irqflags = 0;
 
-	FTS_FUNC_ENTER();
 	spin_lock_irqsave(&fts_data->irq_lock, irqflags);
 
 	if (fts_data->irq_disabled) {
@@ -197,7 +190,6 @@ void fts_irq_enable(void)
 	}
 
 	spin_unlock_irqrestore(&fts_data->irq_lock, irqflags);
-	FTS_FUNC_EXIT();
 }
 
 void fts_hid2std(void)
@@ -210,18 +202,17 @@ void fts_hid2std(void)
 
 	ret = fts_write(buf, 3);
 	if (ret < 0)
-		FTS_ERROR("hid2std cmd write fail");
+		dev_err(fts_data->dev, "hid2std cmd write fail");
 	else {
 		msleep(10);
 		buf[0] = buf[1] = buf[2] = 0;
 		ret = fts_read(NULL, 0, buf, 3);
 		if (ret < 0)
-			FTS_ERROR("hid2std cmd read fail");
+			dev_err(fts_data->dev, "hid2std cmd read fail");
 		else if ((0xEB == buf[0]) && (0xAA == buf[1]) && (0x08 == buf[2]))
-			FTS_DEBUG("hidi2c change to stdi2c successful");
-		else {
-			FTS_DEBUG("hidi2c change to stdi2c not support or fail");
-		}
+			dev_dbg(fts_data->dev, "hidi2c change to stdi2c successful");
+		else
+			dev_dbg(fts_data->dev, "hidi2c change to stdi2c not support or fail");
 	}
 }
 
@@ -240,7 +231,7 @@ static int fts_match_cid
 		if (!force && (type == chip_id_list[i].type))
 			break;
 		else if (force && (type == chip_id_list[i].type)) {
-			FTS_INFO("match cid,type:0x%x", (int)chip_id_list[i].type);
+			dev_info(dev, "match cid,type:0x%x", (int)chip_id_list[i].type);
 			ts_data->ic_info.cid = chip_id_list[i];
 			return 0;
 		}
@@ -251,8 +242,8 @@ static int fts_match_cid
 
 	for (j = 0; j < FTS_MAX_CHIP_IDS; j++) {
 		if (id == chip_id_list[i].chip_ids[j]) {
-			FTS_DEBUG("cid:%x==%x", id, chip_id_list[i].chip_ids[j]);
-			FTS_INFO("match cid,type:0x%x", (int)chip_id_list[i].type);
+			dev_dbg(dev, "cid:%x==%x", id, chip_id_list[i].chip_ids[j]);
+			dev_info(dev, "match cid,type:0x%x", (int)chip_id_list[i].type);
 			ts_data->ic_info.cid = chip_id_list[i];
 			return 0;
 		}
@@ -273,11 +264,11 @@ static int fts_get_chip_types(
 	u32 ctype_entries = sizeof(ctype) / sizeof(struct ft_chip_t);
 
 	if ((0x0 == id_h) || (0x0 == id_l)) {
-		FTS_ERROR("id_h/id_l is 0");
+		dev_dbg(ts_data->dev, "id_h/id_l is 0");
 		return -EINVAL;
 	}
 
-	FTS_INFO("verify id:0x%02x%02x", id_h, id_l);
+	dev_info(ts_data->dev, "verify id:0x%02x%02x", id_h, id_l);
 	for (i = 0; i < ctype_entries; i++) {
 		if (VALID == fw_valid) {
 			if (((id_h == ctype[i].chip_idh) && (id_l == ctype[i].chip_idl))
@@ -311,7 +302,7 @@ static int fts_read_bootid(struct fts_ts_data *ts_data, u8 *id)
 	id_cmd[1] = FTS_CMD_START2;
 	ret = fts_write(id_cmd, 2);
 	if (ret < 0) {
-		FTS_ERROR("start cmd write fail");
+		dev_err(ts_data->dev, "start cmd write fail");
 		return ret;
 	}
 
@@ -324,7 +315,7 @@ static int fts_read_bootid(struct fts_ts_data *ts_data, u8 *id)
 		id_cmd_len = FTS_CMD_READ_ID_LEN;
 	ret = fts_read(id_cmd, id_cmd_len, chip_id, 2);
 	if ((ret < 0) || (0x0 == chip_id[0]) || (0x0 == chip_id[1])) {
-		FTS_ERROR("read boot id fail,read:0x%02x%02x", chip_id[0], chip_id[1]);
+		dev_err(ts_data->dev, "read boot id fail,read:0x%02x%02x", chip_id[0], chip_id[1]);
 		return -EIO;
 	}
 
@@ -358,13 +349,13 @@ static int fts_get_ic_information(struct fts_ts_data *ts_data)
 
 		ret = fts_read_bootid(ts_data, &chip_id[0]);
 		if (ret < 0) {
-			FTS_DEBUG("read boot id fail,retry:%d", cnt);
+			dev_dbg(ts_data->dev, "read boot id fail,retry:%d", cnt);
 			continue;
 		}
 
 		ret = fts_get_chip_types(ts_data, chip_id[0], chip_id[1], INVALID);
 		if (ret < 0) {
-			FTS_DEBUG("can't get ic informaton,retry:%d", cnt);
+			dev_dbg(ts_data->dev, "can't get ic informaton,retry:%d", cnt);
 			continue;
 		}
 
@@ -372,11 +363,11 @@ static int fts_get_ic_information(struct fts_ts_data *ts_data)
 	}
 
 	if (cnt >= 3) {
-		FTS_ERROR("get ic informaton fail");
+		dev_err(ts_data->dev, "get ic informaton fail");
 		return -EIO;
 	}
 
-	FTS_INFO("get ic information, chip id = 0x%02x%02x(cid type=0x%x)",
+	dev_info(ts_data->dev, "get ic information, chip id = 0x%02x%02x(cid type=0x%x)",
 			 ts_data->ic_info.ids.chip_idh, ts_data->ic_info.ids.chip_idl,
 			 ts_data->ic_info.cid.type);
 
@@ -392,23 +383,19 @@ static void fts_show_touch_buffer(u8 *data, u32 datalen)
 	u32 count = 0;
 	char *tmpbuf = NULL;
 
-	tmpbuf = kzalloc(1024, GFP_KERNEL);
-	if (!tmpbuf) {
-		FTS_ERROR("tmpbuf zalloc fail");
+	tmpbuf = devm_kzalloc(fts_data->dev, 1024, GFP_KERNEL);
+	if (!tmpbuf)
 		return;
-	}
 
 	for (i = 0; i < datalen; i++) {
 		count += snprintf(tmpbuf + count, 1024 - count, "%02X,", data[i]);
 		if (count >= 1024)
 			break;
 	}
-	FTS_DEBUG("touch_buf:%s", tmpbuf);
+	dev_dbg(fts_data->dev, "touch_buf:%s", tmpbuf);
 
-	if (tmpbuf) {
-		kfree(tmpbuf);
+	if (tmpbuf)
 		tmpbuf = NULL;
-	}
 }
 
 void fts_release_all_finger(void)
@@ -461,12 +448,12 @@ static int fts_input_report_key(struct fts_ts_data *ts_data, struct ts_event *ke
 				&& !(ts_data->key_state & (1 << i))) {
 				input_report_key(ts_data->input_dev, ts_data->pdata->keys[i], 1);
 				ts_data->key_state |= (1 << i);
-				FTS_DEBUG("Key%d(%d,%d) DOWN!", i, x, y);
+				dev_dbg(ts_data->dev, "Key%d(%d,%d) DOWN!", i, x, y);
 			} else if (EVENT_UP(kevent->flag)
 					   && (ts_data->key_state & (1 << i))) {
 				input_report_key(ts_data->input_dev, ts_data->pdata->keys[i], 0);
 				ts_data->key_state &= ~(1 << i);
-				FTS_DEBUG("Key%d(%d,%d) Up!", i, x, y);
+				dev_dbg(ts_data->dev, "Key%d(%d,%d) Up!", i, x, y);
 			}
 			return 0;
 		}
@@ -501,7 +488,7 @@ static int fts_input_report_b(struct fts_ts_data *ts_data, struct ts_event *even
 
 			if ((ts_data->log_level >= 2) ||
 				((1 == ts_data->log_level) && (FTS_TOUCH_DOWN == events[i].flag))) {
-				FTS_DEBUG("[B]P%d(%d, %d)[p:%d,tm:%d] DOWN!",
+				dev_dbg(ts_data->dev, "[B]P%d(%d, %d)[p:%d,tm:%d] DOWN!",
 						  events[i].id, events[i].x, events[i].y,
 						  events[i].p, events[i].area);
 			}
@@ -509,14 +496,16 @@ static int fts_input_report_b(struct fts_ts_data *ts_data, struct ts_event *even
 			input_mt_slot(input_dev, events[i].id);
 			input_mt_report_slot_state(input_dev, MT_TOOL_FINGER, false);
 			touch_point_pre &= ~(1 << events[i].id);
-			if (ts_data->log_level >= 1) {FTS_DEBUG("[B]P%d UP!", events[i].id);}
+			if (ts_data->log_level >= 1)
+				dev_dbg(ts_data->dev, "[B]P%d UP!", events[i].id);
 		}
 	}
 
 	if (unlikely(touch_point_pre ^ touch_down_point_cur)) {
 		for (i = 0; i < max_touch_num; i++)  {
 			if ((1 << i) & (touch_point_pre ^ touch_down_point_cur)) {
-				if (ts_data->log_level >= 1) {FTS_DEBUG("[B]P%d UP!", i);}
+				if (ts_data->log_level >= 1)
+					dev_dbg(ts_data->dev, "[B]P%d UP!", i);
 				input_mt_slot(input_dev, i);
 				input_mt_report_slot_state(input_dev, MT_TOOL_FINGER, false);
 			}
@@ -526,9 +515,8 @@ static int fts_input_report_b(struct fts_ts_data *ts_data, struct ts_event *even
 	if (touch_down_point_cur)
 		input_report_key(input_dev, BTN_TOUCH, 1);
 	else if (touch_event_coordinate || ts_data->touch_points) {
-		if (ts_data->touch_points && (ts_data->log_level >= 1)) {
-			FTS_DEBUG("[B]Points All Up!");
-		}
+		if (ts_data->touch_points && (ts_data->log_level >= 1))
+			dev_dbg(ts_data->dev, "[B]Points All Up!");
 		input_report_key(input_dev, BTN_TOUCH, 0);
 	}
 
@@ -552,7 +540,7 @@ static int fts_read_touchdata(struct fts_ts_data *ts_data, u8 *buf)
 		ts_data->fw_is_running = true;
 		return 1;
 	} else if (ret < 0) {
-		FTS_ERROR("touch data(%x) abnormal,ret:%d", buf[1], ret);
+		dev_err(ts_data->dev, "touch data(%x) abnormal,ret:%d", buf[1], ret);
 		return ret;
 	}
 
@@ -569,7 +557,7 @@ static int fts_read_parse_touchdata(struct fts_ts_data *ts_data, u8 *touch_buf)
 	/*read touch data*/
 	ret = fts_read_touchdata(ts_data, touch_buf);
 	if (ret < 0) {
-		FTS_ERROR("read touch data fails");
+		dev_err(ts_data->dev, "read touch data fails");
 		return TOUCH_ERROR;
 	}
 
@@ -581,7 +569,7 @@ static int fts_read_parse_touchdata(struct fts_ts_data *ts_data, u8 *touch_buf)
 
 	if ((touch_buf[1] == 0xFF) && (touch_buf[2] == 0xFF)
 		&& (touch_buf[3] == 0xFF) && (touch_buf[4] == 0xFF)) {
-		FTS_INFO("touch buff is 0xff, need recovery state");
+		dev_info(ts_data->dev, "touch buff is 0xff, need recovery state");
 		return TOUCH_FW_INIT;
 	}
 
@@ -605,7 +593,7 @@ static int fts_irq_read_report(struct fts_ts_data *ts_data)
 	case TOUCH_DEFAULT:
 		finger_num = touch_buf[FTS_TOUCH_E_NUM] & 0x0F;
 		if (finger_num > max_touch_num) {
-			FTS_ERROR("invalid point_num(%d)", finger_num);
+			dev_err(ts_data->dev, "invalid point_num(%d)", finger_num);
 			return -EIO;
 		}
 
@@ -615,7 +603,7 @@ static int fts_irq_read_report(struct fts_ts_data *ts_data)
 			if (pointid >= FTS_MAX_ID)
 				break;
 			else if (pointid >= max_touch_num) {
-				FTS_ERROR("ID(%d) beyond max_touch_number", pointid);
+				dev_err(ts_data->dev, "ID(%d) beyond max_touch_number", pointid);
 				return -EINVAL;
 			}
 
@@ -632,13 +620,13 @@ static int fts_irq_read_report(struct fts_ts_data *ts_data)
 
 			event_num++;
 			if (EVENT_DOWN(events[i].flag) && (finger_num == 0)) {
-				FTS_INFO("abnormal touch data from fw");
+				dev_info(ts_data->dev, "abnormal touch data from fw");
 				return -EIO;
 			}
 		}
 
 		if (event_num == 0) {
-			FTS_INFO("no touch point information(%02x)", touch_buf[2]);
+			dev_info(ts_data->dev, "no touch point information(%02x)", touch_buf[2]);
 			return -EIO;
 		}
 		ts_data->touch_event_num = event_num;
@@ -651,7 +639,7 @@ static int fts_irq_read_report(struct fts_ts_data *ts_data)
 	case TOUCH_EVENT_NUM:
 		event_num = touch_buf[FTS_TOUCH_E_NUM] & 0x0F;
 		if (!event_num || (event_num > max_touch_num)) {
-			FTS_ERROR("invalid touch event num(%d)", event_num);
+			dev_err(ts_data->dev, "invalid touch event num(%d)", event_num);
 			return -EIO;
 		}
 
@@ -660,7 +648,7 @@ static int fts_irq_read_report(struct fts_ts_data *ts_data)
 			base = FTS_ONE_TCH_LEN * i + 2;
 			pointid = (touch_buf[FTS_TOUCH_OFF_ID_YH + base]) >> 4;
 			if (pointid >= max_touch_num) {
-				FTS_ERROR("touch point ID(%d) beyond max_touch_number(%d)",
+				dev_err(ts_data->dev, "touch point ID(%d) beyond max_touch_number(%d)",
 						  pointid, max_touch_num);
 				return -EINVAL;
 			}
@@ -684,13 +672,13 @@ static int fts_irq_read_report(struct fts_ts_data *ts_data)
 
 	case TOUCH_EXTRA_MSG:
 		if (!ts_data->touch_analysis_support) {
-			FTS_ERROR("touch_analysis is disabled");
+			dev_err(ts_data->dev, "touch_analysis is disabled");
 			return -EINVAL;
 		}
 
 		event_num = touch_buf[FTS_TOUCH_E_NUM] & 0x0F;
 		if (!event_num || (event_num > max_touch_num)) {
-			FTS_ERROR("invalid touch event num(%d)", event_num);
+			dev_err(ts_data->dev, "invalid touch event num(%d)", event_num);
 			return -EIO;
 		}
 
@@ -699,7 +687,7 @@ static int fts_irq_read_report(struct fts_ts_data *ts_data)
 			base = FTS_ONE_TCH_LEN * i + 4;
 			pointid = (touch_buf[FTS_TOUCH_OFF_ID_YH + base]) >> 4;
 			if (pointid >= max_touch_num) {
-				FTS_ERROR("touch point ID(%d) beyond max_touch_number(%d)",
+				dev_err(ts_data->dev, "touch point ID(%d) beyond max_touch_number(%d)",
 						  pointid, max_touch_num);
 				return -EINVAL;
 			}
@@ -731,7 +719,7 @@ static int fts_irq_read_report(struct fts_ts_data *ts_data)
 		break;
 
 	default:
-		FTS_INFO("unknown touch event(%d)", touch_etype);
+		dev_info(ts_data->dev, "unknown touch event(%d)", touch_etype);
 		break;
 	}
 
@@ -749,7 +737,7 @@ static irqreturn_t fts_irq_handler(int irq, void *data)
 				  &ts_data->pm_completion,
 				  msecs_to_jiffies(FTS_TIMEOUT_COMERR_PM));
 		if (!ret) {
-			FTS_ERROR("Bus don't resume from pm(deep),timeout,skip irq");
+			dev_err(ts_data->dev, "Bus don't resume from pm(deep),timeout,skip irq");
 			return IRQ_HANDLED;
 		}
 	}
@@ -774,7 +762,7 @@ static int fts_irq_registration(struct fts_ts_data *ts_data)
 
 	ts_data->irq = gpio_to_irq(pdata->irq_gpio);
 	pdata->irq_gpio_flags = IRQF_TRIGGER_FALLING | IRQF_ONESHOT;
-	FTS_INFO("irq:%d, flag:%x", ts_data->irq, pdata->irq_gpio_flags);
+	dev_info(ts_data->dev, "irq:%d, flag:%x", ts_data->irq, pdata->irq_gpio_flags);
 	ret = request_threaded_irq(ts_data->irq, NULL, fts_irq_handler,
 							   pdata->irq_gpio_flags,
 							   FTS_DRIVER_NAME, ts_data);
@@ -789,10 +777,9 @@ static int fts_input_init(struct fts_ts_data *ts_data)
 	struct fts_ts_platform_data *pdata = ts_data->pdata;
 	struct input_dev *input_dev;
 
-	FTS_FUNC_ENTER();
 	input_dev = input_allocate_device();
 	if (!input_dev) {
-		FTS_ERROR("Failed to allocate memory for input device");
+		dev_err(ts_data->dev, "Failed to allocate memory for input device");
 		return -ENOMEM;
 	}
 
@@ -813,7 +800,7 @@ static int fts_input_init(struct fts_ts_data *ts_data)
 	__set_bit(INPUT_PROP_DIRECT, input_dev->propbit);
 
 	if (pdata->have_key) {
-		FTS_INFO("set key capabilities");
+		dev_info(ts_data->dev, "set key capabilities");
 		for (key_num = 0; key_num < pdata->key_number; key_num++)
 			input_set_capability(input_dev, EV_KEY, pdata->keys[key_num]);
 	}
@@ -826,7 +813,7 @@ static int fts_input_init(struct fts_ts_data *ts_data)
 
 	ret = input_register_device(input_dev);
 	if (ret) {
-		FTS_ERROR("Input device registration failed");
+		dev_err(ts_data->dev, "Input device registration failed");
 		input_set_drvdata(input_dev, NULL);
 		input_free_device(input_dev);
 		input_dev = NULL;
@@ -834,17 +821,15 @@ static int fts_input_init(struct fts_ts_data *ts_data)
 	}
 
 	ts_data->input_dev = input_dev;
-	FTS_FUNC_EXIT();
+
 	return 0;
 }
 
 static int fts_buffer_init(struct fts_ts_data *ts_data)
 {
-	ts_data->touch_buf = (u8 *)kzalloc(FTS_MAX_TOUCH_BUF, GFP_KERNEL);
-	if (!ts_data->touch_buf) {
-		FTS_ERROR("failed to alloc memory for touch buf");
+	ts_data->touch_buf = devm_kzalloc(ts_data->dev, FTS_MAX_TOUCH_BUF, GFP_KERNEL);
+	if (!ts_data->touch_buf)
 		return -ENOMEM;
-	}
 
 	ts_data->touch_size = FTS_TOUCH_DATA_LEN;
 
@@ -901,18 +886,17 @@ static int fts_gpio_configure(struct fts_ts_data *data)
 {
 	int ret = 0;
 
-	FTS_FUNC_ENTER();
 	/* request irq gpio */
 	if (gpio_is_valid(data->pdata->irq_gpio)) {
 		ret = gpio_request(data->pdata->irq_gpio, "fts_irq_gpio");
 		if (ret) {
-			FTS_ERROR("[GPIO]irq gpio request failed");
+			dev_err(data->dev, "[GPIO]irq gpio request failed");
 			goto err_irq_gpio_req;
 		}
 
 		ret = gpio_direction_input(data->pdata->irq_gpio);
 		if (ret) {
-			FTS_ERROR("[GPIO]set_direction for irq gpio failed");
+			dev_err(data->dev, "[GPIO]set_direction for irq gpio failed");
 			goto err_irq_gpio_dir;
 		}
 	}
@@ -921,18 +905,17 @@ static int fts_gpio_configure(struct fts_ts_data *data)
 	if (gpio_is_valid(data->pdata->reset_gpio)) {
 		ret = gpio_request(data->pdata->reset_gpio, "fts_reset_gpio");
 		if (ret) {
-			FTS_ERROR("[GPIO]reset gpio request failed");
+			dev_err(data->dev, "[GPIO]reset gpio request failed");
 			goto err_irq_gpio_dir;
 		}
 
 		ret = gpio_direction_output(data->pdata->reset_gpio, 1);
 		if (ret) {
-			FTS_ERROR("[GPIO]set_direction for reset gpio failed");
+			dev_err(data->dev, "[GPIO]set_direction for reset gpio failed");
 			goto err_reset_gpio_dir;
 		}
 	}
 
-	FTS_FUNC_EXIT();
 	return 0;
 
 err_reset_gpio_dir:
@@ -942,7 +925,6 @@ err_irq_gpio_dir:
 	if (gpio_is_valid(data->pdata->irq_gpio))
 		gpio_free(data->pdata->irq_gpio);
 err_irq_gpio_req:
-	FTS_FUNC_EXIT();
 	return ret;
 }
 
@@ -963,13 +945,13 @@ static int fts_get_dt_coords(struct device *dev, char *name,
 
 	coords_size = prop->length / sizeof(u32);
 	if (coords_size != FTS_COORDS_ARR_SIZE) {
-		FTS_ERROR("invalid:%s, size:%d", name, coords_size);
+		dev_err(dev, "invalid:%s, size:%d", name, coords_size);
 		return -EINVAL;
 	}
 
 	ret = of_property_read_u32_array(np, name, coords, coords_size);
 	if (ret < 0) {
-		FTS_ERROR("Unable to read %s, please check dts", name);
+		dev_err(dev, "Unable to read %s, please check dts", name);
 		pdata->x_min = FTS_X_MIN_DISPLAY_DEFAULT;
 		pdata->y_min = FTS_Y_MIN_DISPLAY_DEFAULT;
 		pdata->x_max = FTS_X_MAX_DISPLAY_DEFAULT;
@@ -982,7 +964,7 @@ static int fts_get_dt_coords(struct device *dev, char *name,
 		pdata->y_max = coords[3];
 	}
 
-	FTS_INFO("display x(%d %d) y(%d %d)", pdata->x_min, pdata->x_max,
+	dev_info(dev, "display x(%d %d) y(%d %d)", pdata->x_min, pdata->x_max,
 			 pdata->y_min, pdata->y_max);
 	return 0;
 }
@@ -993,23 +975,21 @@ static int fts_parse_dt(struct device *dev, struct fts_ts_platform_data *pdata)
 	struct device_node *np = dev->of_node;
 	u32 temp_val = 0;
 
-	FTS_FUNC_ENTER();
-
 	ret = fts_get_dt_coords(dev, "focaltech,display-coords", pdata);
 	if (ret < 0)
-		FTS_ERROR("Unable to get display-coords");
+		dev_err(dev, "Unable to get display-coords");
 
 	/* key */
 	pdata->have_key = of_property_read_bool(np, "focaltech,have-key");
 	if (pdata->have_key) {
 		ret = of_property_read_u32(np, "focaltech,key-number", &pdata->key_number);
 		if (ret < 0)
-			FTS_ERROR("Key number undefined!");
+			dev_err(dev, "Key number undefined!");
 
 		ret = of_property_read_u32_array(np, "focaltech,keys",
 						 pdata->keys, pdata->key_number);
 		if (ret < 0)
-			FTS_ERROR("Keys undefined!");
+			dev_err(dev, "Keys undefined!");
 		else if (pdata->key_number > FTS_MAX_KEYS)
 			pdata->key_number = FTS_MAX_KEYS;
 
@@ -1017,15 +997,15 @@ static int fts_parse_dt(struct device *dev, struct fts_ts_platform_data *pdata)
 						 pdata->key_x_coords,
 						 pdata->key_number);
 		if (ret < 0)
-			FTS_ERROR("Key Y Coords undefined!");
+			dev_err(dev, "Key Y Coords undefined!");
 
 		ret = of_property_read_u32_array(np, "focaltech,key-y-coords",
 						 pdata->key_y_coords,
 						 pdata->key_number);
 		if (ret < 0)
-			FTS_ERROR("Key X Coords undefined!");
+			dev_err(dev, "Key X Coords undefined!");
 
-		FTS_INFO("VK Number:%d, key:(%d,%d,%d), "
+		dev_info(dev, "VK Number:%d, key:(%d,%d,%d), "
 				 "coords:(%d,%d),(%d,%d),(%d,%d)",
 				 pdata->key_number,
 				 pdata->keys[0], pdata->keys[1], pdata->keys[2],
@@ -1037,15 +1017,15 @@ static int fts_parse_dt(struct device *dev, struct fts_ts_platform_data *pdata)
 	/* reset, irq gpio info */
 	pdata->reset_gpio = of_get_named_gpio(np, "focaltech,reset-gpio", 0);
 	if (pdata->reset_gpio < 0)
-		FTS_ERROR("Unable to get reset_gpio");
+		dev_err(dev, "Unable to get reset_gpio");
 
 	pdata->irq_gpio = of_get_named_gpio(np, "focaltech,irq-gpio", 0);
 	if (pdata->irq_gpio < 0)
-		FTS_ERROR("Unable to get irq_gpio");
+		dev_err(dev, "Unable to get irq_gpio");
 
 	ret = of_property_read_u32(np, "focaltech,max-touch-number", &temp_val);
 	if (ret < 0) {
-		FTS_ERROR("Unable to get max-touch-number, please check dts");
+		dev_err(dev, "Unable to get max-touch-number, please check dts");
 		pdata->max_touch_number = FTS_MAX_POINTS_SUPPORT;
 	} else {
 		if (temp_val < 2)
@@ -1056,10 +1036,9 @@ static int fts_parse_dt(struct device *dev, struct fts_ts_platform_data *pdata)
 			pdata->max_touch_number = temp_val;
 	}
 
-	FTS_INFO("max touch number:%d, irq gpio:%d, reset gpio:%d",
+	dev_info(dev, "max touch number:%d, irq gpio:%d, reset gpio:%d",
 			 pdata->max_touch_number, pdata->irq_gpio, pdata->reset_gpio);
 
-	FTS_FUNC_EXIT();
 	return 0;
 }
 
@@ -1081,35 +1060,33 @@ static int fb_notifier_callback(struct notifier_block *self,
 								  fb_notif);
 
 	if (!evdata) {
-		FTS_ERROR("evdata is null");
+		dev_err(dev, "evdata is null");
 		return 0;
 	}
 
 	if (!(event == FB_EARLY_EVENT_BLANK || event == FB_EVENT_BLANK)) {
-		FTS_INFO("event(%lu) do not need process\n", event);
+		dev_info(dev, "event(%lu) do not need process\n", event);
 		return 0;
 	}
 
 	blank = evdata->data;
-	FTS_INFO("FB event:%lu,blank:%d", event, *blank);
+	dev_info(dev, "FB event:%lu,blank:%d", event, *blank);
 	switch (*blank) {
 	case FB_BLANK_UNBLANK:
-		if (FB_EARLY_EVENT_BLANK == event) {
-			FTS_INFO("resume: event = %lu, not care\n", event);
-		} else if (FB_EVENT_BLANK == event) {
+		if (FB_EARLY_EVENT_BLANK == event)
+			dev_info(dev, "resume: event = %lu, not care\n", event);
+		else if (FB_EVENT_BLANK == event)
 			queue_work(fts_data->ts_workqueue, &fts_data->resume_work);
-		}
 		break;
 	case FB_BLANK_POWERDOWN:
 		if (FB_EARLY_EVENT_BLANK == event) {
 			cancel_work_sync(&fts_data->resume_work);
 			fts_ts_suspend(ts_data->dev);
-		} else if (FB_EVENT_BLANK == event) {
-			FTS_INFO("suspend: event = %lu, not care\n", event);
-		}
+		else if (FB_EVENT_BLANK == event)
+			dev_info(dev, "suspend: event = %lu, not care\n", event);
 		break;
 	default:
-		FTS_INFO("FB BLANK(%d) do not need process\n", *blank);
+		dev_info(dev, "FB BLANK(%d) do not need process\n", *blank);
 		break;
 	}
 
@@ -1128,7 +1105,7 @@ static int drm_check_dt(struct device_node *np)
 
 	count = of_count_phandle_with_args(np, "panel", NULL);
 	if (count <= 0) {
-		FTS_ERROR("find drm_panel count(%d) fail", count);
+		dev_err(dev, "find drm_panel count(%d) fail", count);
 		return -ENODEV;
 	}
 
@@ -1137,41 +1114,41 @@ static int drm_check_dt(struct device_node *np)
 		panel = of_drm_find_panel(node);
 		of_node_put(node);
 		if (!IS_ERR(panel)) {
-			FTS_INFO("find drm_panel successfully");
+			dev_info(dev, "find drm_panel successfully");
 			active_panel = panel;
 			return 0;
 		}
 	}
 
-	FTS_ERROR("no find drm_panel");
+	dev_err(dev, "no find drm_panel");
 	return -ENODEV;
 }
 
-static int drm_notifier_callback(struct notifier_block *self,
-								 unsigned long event, void *data)
+static int drm_notifier_callback
+(struct notifier_block *self, unsigned long event, void *data)
 {
 	struct drm_panel_notifier *evdata = data;
 	int *blank = NULL;
 	struct fts_ts_data *ts_data = container_of(self, struct fts_ts_data,
 								  fb_notif);
 	if (!evdata) {
-		FTS_ERROR("evdata is null");
+		dev_err(dev, "evdata is null");
 		return 0;
 	}
 
 	if (!((event == DRM_PANEL_EARLY_EVENT_BLANK )
 		  || (event == DRM_PANEL_EVENT_BLANK))) {
-		FTS_INFO("event(%lu) do not need process\n", event);
+		dev_info(dev, "event(%lu) do not need process\n", event);
 		return 0;
 	}
 
 	blank = evdata->data;
-	FTS_INFO("DRM event:%lu,blank:%d", event, *blank);
+	dev_info(dev, "DRM event:%lu,blank:%d", event, *blank);
 	switch (*blank) {
 	case DRM_PANEL_BLANK_UNBLANK:
-		if (DRM_PANEL_EARLY_EVENT_BLANK == event) {
-			FTS_INFO("resume: event = %lu, not care\n", event);
-		} else if (DRM_PANEL_EVENT_BLANK == event) {
+		if (DRM_PANEL_EARLY_EVENT_BLANK == event)
+			dev_info(dev, "resume: event = %lu, not care\n", event);
+		else if (DRM_PANEL_EVENT_BLANK == event) {
 			ts_data->blank_up = 1;
 			queue_work(fts_data->ts_workqueue, &fts_data->resume_work);
 		}
@@ -1180,20 +1157,18 @@ static int drm_notifier_callback(struct notifier_block *self,
 		if (DRM_PANEL_EARLY_EVENT_BLANK == event) {
 			cancel_work_sync(&fts_data->resume_work);
 			fts_ts_suspend(ts_data->dev);
-		} else if (DRM_PANEL_EVENT_BLANK == event) {
-			FTS_INFO("suspend: event = %lu, not care\n", event);
-		}
+		else if (DRM_PANEL_EVENT_BLANK == event)
+			dev_info(dev, "suspend: event = %lu, not care\n", event);
 		break;
 	case DRM_PANEL_BLANK_LP:
 		if (DRM_PANEL_EARLY_EVENT_BLANK == event) {
 			cancel_work_sync(&fts_data->resume_work);
 			fts_ts_suspend(ts_data->dev);
-		} else if (DRM_PANEL_EVENT_BLANK == event) {
-			FTS_INFO("suspend: event = %lu, not care\n", event);
-		}
+		} else if (DRM_PANEL_EVENT_BLANK == event)
+			dev_info(dev, "suspend: event = %lu, not care\n", event);
 		break;
 	default:
-		FTS_INFO("DRM BLANK(%d) do not need process\n", *blank);
+		dev_info(dev, "DRM BLANK(%d) do not need process\n", *blank);
 		break;
 	}
 
@@ -1208,36 +1183,34 @@ static int drm_notifier_callback
 	struct fts_ts_data *ts_data = container_of(self, struct fts_ts_data, fb_notif);
 
 	if (!evdata) {
-		FTS_ERROR("evdata is null");
+		dev_err(dev, "evdata is null");
 		return 0;
 	}
 
 	if (!((event == MSM_DRM_EARLY_EVENT_BLANK )
 		  || (event == MSM_DRM_EVENT_BLANK))) {
-		FTS_INFO("event(%lu) do not need process\n", event);
+		dev_info(dev, "event(%lu) do not need process\n", event);
 		return 0;
 	}
 
 	blank = evdata->data;
-	FTS_INFO("DRM event:%lu,blank:%d", event, *blank);
+	dev_info(dev, "DRM event:%lu,blank:%d", event, *blank);
 	switch (*blank) {
 	case MSM_DRM_BLANK_UNBLANK:
-		if (MSM_DRM_EARLY_EVENT_BLANK == event) {
-			FTS_INFO("resume: event = %lu, not care\n", event);
-		} else if (MSM_DRM_EVENT_BLANK == event) {
+		if (MSM_DRM_EARLY_EVENT_BLANK == event)
+			dev_info(dev, "resume: event = %lu, not care\n", event);
+		else if (MSM_DRM_EVENT_BLANK == event)
 			queue_work(fts_data->ts_workqueue, &fts_data->resume_work);
-		}
 		break;
 	case MSM_DRM_BLANK_POWERDOWN:
 		if (MSM_DRM_EARLY_EVENT_BLANK == event) {
 			cancel_work_sync(&fts_data->resume_work);
 			fts_ts_suspend(ts_data->dev);
-		} else if (MSM_DRM_EVENT_BLANK == event) {
-			FTS_INFO("suspend: event = %lu, not care\n", event);
-		}
+		} else if (MSM_DRM_EVENT_BLANK == event)
+			dev_info(dev, "suspend: event = %lu, not care\n", event);
 		break;
 	default:
-		FTS_INFO("DRM BLANK(%d) do not need process\n", *blank);
+		dev_info(dev, "DRM BLANK(%d) do not need process\n", *blank);
 		break;
 	}
 
@@ -1263,265 +1236,35 @@ static void fts_ts_late_resume(struct early_suspend *handler)
 }
 #endif
 
-static int fts_ts_probe_entry(struct fts_ts_data *ts_data)
-{
-	int ret = 0;
-	int pdata_size = sizeof(struct fts_ts_platform_data);
-
-	FTS_FUNC_ENTER();
-	FTS_INFO("%s", FTS_DRIVER_VERSION);
-	ts_data->pdata = kzalloc(pdata_size, GFP_KERNEL);
-	if (!ts_data->pdata) {
-		FTS_ERROR("allocate memory for platform_data fail");
-		return -ENOMEM;
-	}
-
-	if (ts_data->dev->of_node) {
-		ret = fts_parse_dt(ts_data->dev, ts_data->pdata);
-		if (ret)
-			FTS_ERROR("device-tree parse fail");
-
-	#if defined(CONFIG_DRM)
-	#if defined(CONFIG_DRM_PANEL)
-		ret = drm_check_dt(ts_data->dev->of_node);
-		if (ret) {
-			if (drm_check_count++ < DRM_CHK_MAX_COUNTS) {
-				FTS_INFO("parse drm-panel fail, count: %d", drm_check_count);
-				return -EPROBE_DEFER;
-			}
-			FTS_ERROR("parse drm-panel fail, do not retry again");
-		}
-	#endif
-	#endif
-	} else {
-		if (ts_data->dev->platform_data) {
-			memcpy(ts_data->pdata, ts_data->dev->platform_data, pdata_size);
-		} else {
-			FTS_ERROR("platform_data is null");
-			return -ENODEV;
-		}
-	}
-
-	ts_data->ts_workqueue = create_singlethread_workqueue("fts_wq");
-	if (!ts_data->ts_workqueue) {
-		FTS_ERROR("create fts workqueue fail");
-	}
-
-	spin_lock_init(&ts_data->irq_lock);
-	mutex_init(&ts_data->report_mutex);
-	mutex_init(&ts_data->bus_lock);
-	init_waitqueue_head(&ts_data->ts_waitqueue);
-
-	/* Init communication interface */
-	ret = fts_bus_init(ts_data);
-	if (ret) {
-		FTS_ERROR("bus initialize fail");
-		goto err_bus_init;
-	}
-
-	ret = fts_input_init(ts_data);
-	if (ret) {
-		FTS_ERROR("input initialize fail");
-		goto err_input_init;
-	}
-
-	ret = fts_buffer_init(ts_data);
-	if (ret) {
-		FTS_ERROR("buffer init fail");
-		goto err_buffer_init;
-	}
-
-	ret = fts_gpio_configure(ts_data);
-	if (ret) {
-		FTS_ERROR("configure the gpios fail");
-		goto err_gpio_config;
-	}
-
-	#if (!FTS_CHIP_IDC)
-	fts_reset_proc(ts_data,200);
-	#endif
-
-	ret = fts_get_ic_information(ts_data);
-	if (ret) {
-		FTS_ERROR("not focal IC, unregister driver");
-		goto err_irq_req;
-	}
-
-	ret = fts_create_apk_debug_channel(ts_data);
-	if (ret) {
-		FTS_ERROR("create apk debug node fail");
-	}
-
-	ret = fts_create_sysfs(ts_data);
-	if (ret) {
-		FTS_ERROR("create sysfs node fail");
-	}
-
-	ret = fts_point_report_check_init(ts_data);
-	if (ret) {
-		FTS_ERROR("init point report check fail");
-	}
-
-	ret = fts_ex_mode_init(ts_data);
-	if (ret) {
-		FTS_ERROR("init glove/cover/charger fail");
-	}
-
-	ret = fts_irq_registration(ts_data);
-	if (ret) {
-		FTS_ERROR("request irq failed");
-		goto err_irq_req;
-	}
-
-	ret = fts_fwupg_init(ts_data);
-	if (ret) {
-		FTS_ERROR("init fw upgrade fail");
-	}
-
-	if (ts_data->ts_workqueue) {
-		INIT_WORK(&ts_data->resume_work, fts_resume_work);
-	}
-
-	#if defined(CONFIG_PM) && FTS_PATCH_COMERR_PM
-	init_completion(&ts_data->pm_completion);
-	ts_data->pm_suspend = false;
-	#endif
-
-	#if defined(CONFIG_FB)
-	ts_data->fb_notif.notifier_call = fb_notifier_callback;
-	ret = fb_register_client(&ts_data->fb_notif);
-	if (ret) {
-		FTS_ERROR("[FB]Unable to register fb_notifier: %d", ret);
-	}
-	#elif defined(CONFIG_DRM)
-	ts_data->fb_notif.notifier_call = drm_notifier_callback;
-	#if defined(CONFIG_DRM_PANEL)
-	if (active_panel) {
-		ret = drm_panel_notifier_register(active_panel, &ts_data->fb_notif);
-		if (ret)
-			FTS_ERROR("[DRM]drm_panel_notifier_register fail: %d\n", ret);
-	}
-	#else
-	ret = msm_drm_register_client(&ts_data->fb_notif);
-	if (ret) {
-		FTS_ERROR("[DRM]Unable to register fb_notifier: %d\n", ret);
-	}
-	#endif
-	#elif defined(CONFIG_HAS_EARLYSUSPEND)
-	ts_data->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + FTS_SUSPEND_LEVEL;
-	ts_data->early_suspend.suspend = fts_ts_early_suspend;
-	ts_data->early_suspend.resume = fts_ts_late_resume;
-	register_early_suspend(&ts_data->early_suspend);
-	#endif
-
-	FTS_FUNC_EXIT();
-	return 0;
-
-err_irq_req:
-	if (gpio_is_valid(ts_data->pdata->reset_gpio))
-		gpio_free(ts_data->pdata->reset_gpio);
-	if (gpio_is_valid(ts_data->pdata->irq_gpio))
-		gpio_free(ts_data->pdata->irq_gpio);
-err_gpio_config:
-	kfree_safe(ts_data->touch_buf);
-err_buffer_init:
-	input_unregister_device(ts_data->input_dev);
-err_input_init:
-	if (ts_data->ts_workqueue)
-		destroy_workqueue(ts_data->ts_workqueue);
-err_bus_init:
-	kfree_safe(ts_data->bus_tx_buf);
-	kfree_safe(ts_data->bus_rx_buf);
-	kfree_safe(ts_data->pdata);
-
-	FTS_FUNC_EXIT();
-	return ret;
-}
-
-static int fts_ts_remove_entry(struct fts_ts_data *ts_data)
-{
-	FTS_FUNC_ENTER();
-
-	cancel_work_sync(&fts_data->resume_work);
-	fts_point_report_check_exit(ts_data);
-	fts_release_apk_debug_channel(ts_data);
-	fts_remove_sysfs(ts_data);
-	fts_ex_mode_exit(ts_data);
-
-	fts_fwupg_exit(ts_data);
-
-	free_irq(ts_data->irq, ts_data);
-
-	fts_bus_exit(ts_data);
-
-	input_unregister_device(ts_data->input_dev);
-
-	if (ts_data->ts_workqueue)
-		destroy_workqueue(ts_data->ts_workqueue);
-
-	#if defined(CONFIG_FB)
-	if (fb_unregister_client(&ts_data->fb_notif))
-		FTS_ERROR("[FB]Error occurred while unregistering fb_notifier.");
-	#elif defined(CONFIG_DRM)
-	#if defined(CONFIG_DRM_PANEL)
-	if (active_panel)
-		drm_panel_notifier_unregister(active_panel, &ts_data->fb_notif);
-	#else
-	if (msm_drm_unregister_client(&ts_data->fb_notif))
-		FTS_ERROR("[DRM]Error occurred while unregistering fb_notifier.\n");
-	#endif
-	#elif defined(CONFIG_HAS_EARLYSUSPEND)
-	unregister_early_suspend(&ts_data->early_suspend);
-	#endif
-
-	if (gpio_is_valid(ts_data->pdata->reset_gpio))
-		gpio_free(ts_data->pdata->reset_gpio);
-
-	if (gpio_is_valid(ts_data->pdata->irq_gpio))
-		gpio_free(ts_data->pdata->irq_gpio);
-
-	fts_power_off(ts_data);
-
-	kfree_safe(ts_data->touch_buf);
-	kfree_safe(ts_data->pdata);
-	kfree_safe(ts_data);
-
-	FTS_FUNC_EXIT();
-
-	return 0;
-}
-
 static int fts_ts_suspend(struct device *dev)
 {
 	int ret = 0;
 	struct fts_ts_data *ts_data = fts_data;
 
-	FTS_FUNC_ENTER();
 	if (ts_data->suspended) {
-		FTS_INFO("Already in suspend state");
+		dev_info(dev, "Already in suspend state");
 		return 0;
 	}
 
 	if (ts_data->fw_loading) {
-		FTS_INFO("fw upgrade in process, can't suspend");
+		dev_info(dev, "fw upgrade in process, can't suspend");
 		return 0;
 	}
 
-	FTS_INFO("make TP enter into sleep mode");
+	dev_info(dev, "make TP enter into sleep mode");
 	ret = fts_write_reg(FTS_REG_POWER_MODE, FTS_REG_POWER_MODE_SLEEP);
 	if (ret < 0)
-		FTS_ERROR("set TP to sleep mode fail, ret=%d", ret);
+		dev_err(dev, "set TP to sleep mode fail, ret=%d", ret);
 
 	if (!ts_data->ic_info.is_incell) {
 		ret = fts_power_suspend(ts_data);
-		if (ret < 0) {
-			FTS_ERROR("power enter suspend fail");
-		}
+		if (ret < 0)
+			dev_err(dev, "power enter suspend fail");
 	}
 
 	fts_release_all_finger();
 	ts_data->suspended = true;
-	FTS_FUNC_EXIT();
+
 	return 0;
 }
 
@@ -1530,14 +1273,14 @@ static int fts_ts_resume(struct device *dev)
 	struct fts_ts_data *ts_data = fts_data;
 	struct input_dev *input_dev = ts_data->input_dev;
 
-	FTS_INFO("down flag = %d,blank flag = %d", ts_data->fod_info.fp_down_report, ts_data->blank_up);
+	dev_info(dev, "down flag = %d,blank flag = %d", ts_data->fod_info.fp_down_report, ts_data->blank_up);
 	if ((ts_data->fod_info.fp_down_report) && (ts_data->blank_up)) {
 		ts_data->fod_info.fp_down_report = 0;
 		input_sync(input_dev);
 	}
-	FTS_FUNC_ENTER();
+
 	if (!ts_data->suspended) {
-		FTS_DEBUG("Already in awake state");
+		dev_dbg(dev, "Already in awake state");
 		return 0;
 	}
 
@@ -1550,7 +1293,6 @@ static int fts_ts_resume(struct device *dev)
 	fts_wait_tp_to_valid();
 	fts_ex_mode_recovery(ts_data);
 
-	FTS_FUNC_EXIT();
 	ts_data->blank_up = 0;
 	return 0;
 }
@@ -1560,7 +1302,7 @@ static int fts_pm_suspend(struct device *dev)
 {
 	struct fts_ts_data *ts_data = dev_get_drvdata(dev);
 
-	FTS_INFO("system enters into pm_suspend");
+	dev_info(dev, "system enters into pm_suspend");
 	ts_data->pm_suspend = true;
 	reinit_completion(&ts_data->pm_completion);
 	return 0;
@@ -1570,7 +1312,7 @@ static int fts_pm_resume(struct device *dev)
 {
 	struct fts_ts_data *ts_data = dev_get_drvdata(dev);
 
-	FTS_INFO("system resumes from pm_suspend");
+	dev_info(dev, "system resumes from pm_suspend");
 	ts_data->pm_suspend = false;
 	complete(&ts_data->pm_completion);
 	return 0;
@@ -1595,6 +1337,11 @@ static int fts_ts_probe(struct spi_device *spi)
 
 	ts_data = devm_kzalloc(&spi->dev, sizeof(*ts_data), GFP_KERNEL);
 	if (!ts_data)
+		return -ENOMEM;
+
+	ts_data->pdata = devm_kzalloc(&spi->dev,
+			sizeof(struct fts_ts_platform_data), GFP_KERNEL);
+	if (!ts_data->pdata)
 		return -ENOMEM;
 
 	/* Get reset GPIO */
@@ -1624,31 +1371,206 @@ static int fts_ts_probe(struct spi_device *spi)
 	ts_data->bus_type = BUS_TYPE_SPI_V2;
 	spi_set_drvdata(spi, ts_data);
 
-	ret = fts_ts_probe_entry(ts_data);
-	if (ret) {
-		FTS_ERROR("Touch Screen(SPI BUS) driver probe fail");
-		kfree_safe(ts_data);
-		return ret;
+	if (ts_data->dev->of_node) {
+		ret = fts_parse_dt(ts_data->dev, ts_data->pdata);
+		if (ret)
+			dev_err(&spi->dev, "device-tree parse fail");
+
+	#if defined(CONFIG_DRM)
+	#if defined(CONFIG_DRM_PANEL)
+		ret = drm_check_dt(ts_data->dev->of_node);
+		if (ret) {
+			if (drm_check_count++ < DRM_CHK_MAX_COUNTS) {
+				dev_info(dev, "parse drm-panel fail, count: %d", drm_check_count);
+				return -EPROBE_DEFER;
+			}
+			dev_err(&spi->dev, "parse drm-panel fail, do not retry again");
+		}
+	#endif
+	#endif
+	} else {
+		if (ts_data->dev->platform_data)
+			memcpy(ts_data->pdata, ts_data->dev->platform_data,
+							sizeof(struct fts_ts_platform_data));
+		else
+			return dev_err_probe(&spi->dev, -ENODEV, "Platform_data is null\n");
 	}
+
+	ts_data->ts_workqueue = create_singlethread_workqueue("fts_wq");
+	if (!ts_data->ts_workqueue)
+		dev_err(&spi->dev, "create fts workqueue fail");
+
+	spin_lock_init(&ts_data->irq_lock);
+	mutex_init(&ts_data->report_mutex);
+	mutex_init(&ts_data->bus_lock);
+	init_waitqueue_head(&ts_data->ts_waitqueue);
+
+	/* Init communication interface */
+	ret = fts_bus_init(ts_data);
+	if (ret) {
+		dev_err(&spi->dev, "bus initialize fail");
+		goto err_bus_init;
+	}
+
+	ret = fts_input_init(ts_data);
+	if (ret) {
+		dev_err(&spi->dev, "input initialize fail");
+		goto err_input_init;
+	}
+
+	ret = fts_buffer_init(ts_data);
+	if (ret) {
+		dev_err(&spi->dev, "buffer init fail");
+		goto err_buffer_init;
+	}
+
+	ret = fts_gpio_configure(ts_data);
+	if (ret)
+		dev_err(&spi->dev, "configure the gpios fail");
+
+	#if (!FTS_CHIP_IDC)
+	fts_reset_proc(ts_data,200);
+	#endif
+
+	ret = fts_get_ic_information(ts_data);
+	if (ret) {
+		dev_err(&spi->dev, "not focal IC, unregister driver");
+		goto err_irq_req;
+	}
+
+	ret = fts_create_apk_debug_channel(ts_data);
+	if (ret)
+		dev_err(&spi->dev, "create apk debug node fail");
+
+	ret = fts_create_sysfs(ts_data);
+	if (ret)
+		dev_err(&spi->dev, "create sysfs node fail");
+
+	ret = fts_point_report_check_init(ts_data);
+	if (ret)
+		dev_err(&spi->dev, "init point report check fail");
+
+	ret = fts_ex_mode_init(ts_data);
+	if (ret)
+		dev_err(&spi->dev, "init glove/cover/charger fail");
+
+	ret = fts_irq_registration(ts_data);
+	if (ret) {
+		dev_err(&spi->dev, "request irq failed");
+		goto err_irq_req;
+	}
+
+	ret = fts_fwupg_init(ts_data);
+	if (ret)
+		dev_err(&spi->dev, "init fw upgrade fail");
+
+	if (ts_data->ts_workqueue)
+		INIT_WORK(&ts_data->resume_work, fts_resume_work);
+
+	#if defined(CONFIG_PM) && FTS_PATCH_COMERR_PM
+	init_completion(&ts_data->pm_completion);
+	ts_data->pm_suspend = false;
+	#endif
+
+	#if defined(CONFIG_FB)
+	ts_data->fb_notif.notifier_call = fb_notifier_callback;
+	ret = fb_register_client(&ts_data->fb_notif);
+	if (ret)
+		dev_err(&spi->dev, "[FB]Unable to register fb_notifier: %d", ret);
+	#elif defined(CONFIG_DRM)
+	ts_data->fb_notif.notifier_call = drm_notifier_callback;
+	#if defined(CONFIG_DRM_PANEL)
+	if (active_panel) {
+		ret = drm_panel_notifier_register(active_panel, &ts_data->fb_notif);
+		if (ret)
+			dev_err(&spi->dev, "[DRM]drm_panel_notifier_register fail: %d\n", ret);
+	}
+	#else
+	ret = msm_drm_register_client(&ts_data->fb_notif);
+	if (ret)
+		dev_err(&spi->dev, "[DRM]Unable to register fb_notifier: %d\n", ret);
+	#endif
+	#elif defined(CONFIG_HAS_EARLYSUSPEND)
+	ts_data->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + FTS_SUSPEND_LEVEL;
+	ts_data->early_suspend.suspend = fts_ts_early_suspend;
+	ts_data->early_suspend.resume = fts_ts_late_resume;
+	register_early_suspend(&ts_data->early_suspend);
+	#endif
+
 	device_init_wakeup(ts_data->dev,true);
-	FTS_INFO("Touch Screen(SPI BUS) driver prboe successfully");
+
+	dev_dbg(&spi->dev, "FocalTech Touchscreen Controller");
 
 	return 0;
+
+err_irq_req:
+	if (gpio_is_valid(ts_data->pdata->reset_gpio))
+		gpio_free(ts_data->pdata->reset_gpio);
+	if (gpio_is_valid(ts_data->pdata->irq_gpio))
+		gpio_free(ts_data->pdata->irq_gpio);
+err_buffer_init:
+	input_unregister_device(ts_data->input_dev);
+err_input_init:
+	if (ts_data->ts_workqueue)
+		destroy_workqueue(ts_data->ts_workqueue);
+err_bus_init:
+	kfree_safe(ts_data->bus_tx_buf);
+	kfree_safe(ts_data->bus_rx_buf);
+
+	return ret;
 }
 
 static void fts_ts_remove(struct spi_device *spi)
 {
-	fts_ts_remove_entry(spi_get_drvdata(spi));
+	cancel_work_sync(&fts_data->resume_work);
+	fts_point_report_check_exit(fts_data);
+	fts_release_apk_debug_channel(fts_data);
+	fts_remove_sysfs(fts_data);
+	fts_ex_mode_exit(fts_data);
+
+	fts_fwupg_exit(fts_data);
+
+	free_irq(fts_data->irq, fts_data);
+
+	fts_bus_exit(fts_data);
+
+	input_unregister_device(fts_data->input_dev);
+
+	if (fts_data->ts_workqueue)
+		destroy_workqueue(fts_data->ts_workqueue);
+
+	#if defined(CONFIG_FB)
+	if (fb_unregister_client(&fts_data->fb_notif))
+		dev_err(dev, "[FB]Error occurred while unregistering fb_notifier.");
+	#elif defined(CONFIG_DRM)
+	#if defined(CONFIG_DRM_PANEL)
+	if (active_panel)
+		drm_panel_notifier_unregister(active_panel, &fts_data->fb_notif);
+	#else
+	if (msm_drm_unregister_client(&fts_data->fb_notif))
+		dev_err(dev, "[DRM]Error occurred while unregistering fb_notifier.\n");
+	#endif
+	#elif defined(CONFIG_HAS_EARLYSUSPEND)
+	unregister_early_suspend(&fts_data->early_suspend);
+	#endif
+
+	if (gpio_is_valid(fts_data->pdata->reset_gpio))
+		gpio_free(fts_data->pdata->reset_gpio);
+
+	if (gpio_is_valid(fts_data->pdata->irq_gpio))
+		gpio_free(fts_data->pdata->irq_gpio);
+
+	fts_power_off(fts_data);
 }
 
 static const struct spi_device_id fts_ts_id[] = {
-	{FTS_DRIVER_NAME, 0},
+	{ FTS_DRIVER_NAME, 0 },
 	{},
 };
 MODULE_DEVICE_TABLE(spi, fts_ts_id);
 
 static const struct of_device_id fts_dt_match[] = {
-	{.compatible = "focaltech,fts_ts", },
+	{ .compatible = "focaltech,fts_ts", },
 	{},
 };
 MODULE_DEVICE_TABLE(of, fts_dt_match);

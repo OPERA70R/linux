@@ -69,7 +69,7 @@ static void fts_prc_func(struct work_struct *work)
             if (ts_data->touch_points) {
                 fts_release_all_finger();
                 if (ts_data->log_level >= 3) {
-                    FTS_DEBUG("prc trigger interval:%dms",
+                   dev_dbg(fts_data->dev, "prc trigger interval:%dms",
                               jiffies_to_msecs(cur_jiffies - ts_data->intr_jiffies));
                 }
             }
@@ -109,10 +109,10 @@ static ssize_t fts_prc_store(
 
     mutex_lock(&input_dev->mutex);
     if (FTS_SYSFS_ECHO_ON(buf)) {
-        FTS_DEBUG("enable prc");
+        dev_dbg(fts_data->dev, "enable prc");
         ts_data->prc_support = ENABLE;
     } else if (FTS_SYSFS_ECHO_OFF(buf)) {
-        FTS_DEBUG("disable prc");
+        dev_dbg(fts_data->dev, "disable prc");
         cancel_delayed_work_sync(&ts_data->prc_work);
         ts_data->prc_support = DISABLE;
     }
@@ -149,22 +149,20 @@ int fts_point_report_check_init(struct fts_ts_data *ts_data)
 {
     int ret = 0;
 
-    FTS_FUNC_ENTER();
-
     if (ts_data->ts_workqueue) {
         INIT_DELAYED_WORK(&ts_data->prc_work, fts_prc_func);
     } else {
-        FTS_ERROR("fts workqueue is NULL, can't run point report check function");
+        dev_err(fts_data->dev, "fts workqueue is NULL, can't run point report check function");
         return -EINVAL;
     }
 
     ret = sysfs_create_file(&ts_data->dev->kobj, &dev_attr_fts_prc.attr);
     if ( ret < 0) {
-        FTS_ERROR("create prc sysfs fail");
+        dev_err(fts_data->dev, "create prc sysfs fail");
     }
 
     ts_data->prc_support = FTS_POINT_REPORT_CHECK_EN;
-    FTS_FUNC_EXIT();
+
     return 0;
 }
 
@@ -177,9 +175,7 @@ int fts_point_report_check_init(struct fts_ts_data *ts_data)
 *****************************************************************************/
 int fts_point_report_check_exit(struct fts_ts_data *ts_data)
 {
-    FTS_FUNC_ENTER();
     cancel_delayed_work_sync(&ts_data->prc_work);
     sysfs_remove_file(&ts_data->dev->kobj, &dev_attr_fts_prc.attr);
-    FTS_FUNC_EXIT();
     return 0;
 }

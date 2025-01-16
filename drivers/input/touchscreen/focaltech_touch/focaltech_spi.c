@@ -85,7 +85,7 @@ static int fts_spi_transfer(u8 *tx_buf, u8 *rx_buf, u32 len)
 
 	ret = spi_sync(spi, &msg);
 	if (ret) {
-		FTS_ERROR("spi_sync fail,ret:%d", ret);
+		dev_err(fts_data->dev, "spi_sync fail,ret:%d", ret);
 		return ret;
 	}
 
@@ -100,21 +100,21 @@ static void fts_spi_buf_show(u8 *data, int datalen)
 	char *tmpbuf = NULL;
 
 	if (!data || (datalen <= 0)) {
-		FTS_ERROR("data/datalen is invalid");
+		dev_err(fts_data->dev, "data/datalen is invalid");
 		return;
 	}
 
 	size = (datalen > 256) ? 256 : datalen;
 	tmpbuf = kzalloc(1024, GFP_KERNEL);
 	if (!tmpbuf) {
-		FTS_ERROR("tmpbuf zalloc fail");
+		dev_err(fts_data->dev, "tmpbuf zalloc fail");
 		return;
 	}
 
 	for (i = 0; i < size; i++)
 		count += snprintf(tmpbuf + count, 1024 - count, "%02X ", data[i]);
 
-	FTS_DEBUG("%s", tmpbuf);
+	dev_dbg(fts_data->dev, "%s", tmpbuf);
 	if (tmpbuf) {
 		kfree(tmpbuf);
 		tmpbuf = NULL;
@@ -167,7 +167,7 @@ int fts_write(u8 *writebuf, u32 writelen)
 	u32 datalen = writelen - 1;
 
 	if (!writebuf || !writelen) {
-		FTS_ERROR("writebuf/len is invalid");
+		dev_err(fts_data->dev, "writebuf/len is invalid");
 		return -EINVAL;
 	}
 
@@ -175,14 +175,14 @@ int fts_write(u8 *writebuf, u32 writelen)
 	if (txlen_need > SPI_BUF_LENGTH) {
 		txbuf = kzalloc(txlen_need, GFP_KERNEL);
 		if (NULL == txbuf) {
-			FTS_ERROR("txbuf malloc fail");
+			dev_err(fts_data->dev, "txbuf malloc fail");
 			ret = -ENOMEM;
 			goto err_write;
 		}
 
 		rxbuf = kzalloc(txlen_need, GFP_KERNEL);
 		if (NULL == rxbuf) {
-			FTS_ERROR("rxbuf malloc fail");
+			dev_err(fts_data->dev, "rxbuf malloc fail");
 			ret = -ENOMEM;
 			goto err_write;
 		}
@@ -208,14 +208,14 @@ int fts_write(u8 *writebuf, u32 writelen)
 		if ((0 == ret) && ((rxbuf[3] & 0xA0) == 0)) {
 			break;
 		} else {
-			FTS_DEBUG("data write(addr:%x),status:%x,retry:%d,ret:%d",
+			dev_dbg(fts_data->dev, "data write(addr:%x),status:%x,retry:%d,ret:%d",
 					  writebuf[0], rxbuf[3], i, ret);
 			ret = -EIO;
 			udelay(CS_HIGH_DELAY);
 		}
 	}
 	if (ret < 0) {
-		FTS_ERROR("data write(addr:%x) fail,status:%x,ret:%d",
+		dev_err(fts_data->dev, "data write(addr:%x) fail,status:%x,ret:%d",
 				  writebuf[0], rxbuf[3], ret);
 	}
 
@@ -259,7 +259,7 @@ int fts_read(u8 *cmd, u32 cmdlen, u8 *data, u32 datalen)
 	u32 dp = 0;
 
 	if (!cmd || !cmdlen || !data || !datalen) {
-		FTS_ERROR("cmd/cmdlen/data/datalen is invalid");
+		dev_err(fts_data->dev, "cmd/cmdlen/data/datalen is invalid");
 		return -EINVAL;
 	}
 
@@ -267,14 +267,14 @@ int fts_read(u8 *cmd, u32 cmdlen, u8 *data, u32 datalen)
 	if (txlen_need > SPI_BUF_LENGTH) {
 		txbuf = kzalloc(txlen_need, GFP_KERNEL);
 		if (NULL == txbuf) {
-			FTS_ERROR("txbuf malloc fail");
+			dev_err(fts_data->dev, "txbuf malloc fail");
 			ret = -ENOMEM;
 			goto err_read;
 		}
 
 		rxbuf = kzalloc(txlen_need, GFP_KERNEL);
 		if (NULL == rxbuf) {
-			FTS_ERROR("rxbuf malloc fail");
+			dev_err(fts_data->dev, "rxbuf malloc fail");
 			ret = -ENOMEM;
 			goto err_read;
 		}
@@ -303,7 +303,7 @@ int fts_read(u8 *cmd, u32 cmdlen, u8 *data, u32 datalen)
 			if (ctrl & DATA_CRC_EN) {
 				ret = rdata_check(&rxbuf[dp], txlen - dp);
 				if (ret < 0) {
-					FTS_DEBUG("data read(addr:%x) crc abnormal,retry:%d",
+					dev_dbg(fts_data->dev, "data read(addr:%x) crc abnormal,retry:%d",
 							  cmd[0], i);
 					udelay(CS_HIGH_DELAY);
 					continue;
@@ -311,7 +311,7 @@ int fts_read(u8 *cmd, u32 cmdlen, u8 *data, u32 datalen)
 			}
 			break;
 		} else {
-			FTS_DEBUG("data read(addr:%x) status:%x,retry:%d,ret:%d",
+			dev_dbg(fts_data->dev, "data read(addr:%x) status:%x,retry:%d,ret:%d",
 					  cmd[0], rxbuf[3], i, ret);
 			ret = -EIO;
 			udelay(CS_HIGH_DELAY);
@@ -319,7 +319,7 @@ int fts_read(u8 *cmd, u32 cmdlen, u8 *data, u32 datalen)
 	}
 
 	if (ret < 0) {
-		FTS_ERROR("data read(addr:%x) %s,status:%x,ret:%d", cmd[0],
+		dev_err(fts_data->dev, "data read(addr:%x) %s,status:%x,ret:%d", cmd[0],
 				  (i >= SPI_RETRY_NUMBER) ? "crc abnormal" : "fail",
 				  rxbuf[3], ret);
 	}
@@ -357,7 +357,7 @@ int fts_spi_transfer_direct(u8 *writebuf, u32 writelen, u8 *readbuf, u32 readlen
 	u32 txlen = (read_cmd) ? readlen : writelen;
 
 	if (!writebuf || !writelen) {
-		FTS_ERROR("writebuf/len is invalid");
+		dev_err(fts_data->dev, "writebuf/len is invalid");
 		return -EINVAL;
 	}
 
@@ -365,14 +365,14 @@ int fts_spi_transfer_direct(u8 *writebuf, u32 writelen, u8 *readbuf, u32 readlen
 	if (txlen > SPI_BUF_LENGTH) {
 		txbuf = kzalloc(txlen, GFP_KERNEL);
 		if (NULL == txbuf) {
-			FTS_ERROR("txbuf malloc fail");
+			dev_err(fts_data->dev, "txbuf malloc fail");
 			ret = -ENOMEM;
 			goto err_spi_dir;
 		}
 
 		rxbuf = kzalloc(txlen, GFP_KERNEL);
 		if (NULL == rxbuf) {
-			FTS_ERROR("rxbuf malloc fail");
+			dev_err(fts_data->dev, "rxbuf malloc fail");
 			ret = -ENOMEM;
 			goto err_spi_dir;
 		}
@@ -386,7 +386,7 @@ int fts_spi_transfer_direct(u8 *writebuf, u32 writelen, u8 *readbuf, u32 readlen
 	memcpy(txbuf, writebuf, writelen);
 	ret = fts_spi_transfer(txbuf, rxbuf, txlen);
 	if (ret < 0) {
-		FTS_ERROR("data read(addr:%x) fail,status:%x,ret:%d", txbuf[0], rxbuf[3], ret);
+		dev_err(fts_data->dev, "data read(addr:%x) fail,status:%x,ret:%d", txbuf[0], rxbuf[3], ret);
 		goto err_spi_dir;
 	}
 
@@ -415,27 +415,25 @@ err_spi_dir:
 
 int fts_bus_init(struct fts_ts_data *ts_data)
 {
-	FTS_FUNC_ENTER();
 	ts_data->bus_tx_buf = kzalloc(SPI_BUF_LENGTH, GFP_KERNEL);
 	if (NULL == ts_data->bus_tx_buf) {
-		FTS_ERROR("failed to allocate memory for bus_tx_buf");
+		dev_err(fts_data->dev, "failed to allocate memory for bus_tx_buf");
 		return -ENOMEM;
 	}
 
 	ts_data->bus_rx_buf = kzalloc(SPI_BUF_LENGTH, GFP_KERNEL);
 	if (NULL == ts_data->bus_rx_buf) {
-		FTS_ERROR("failed to allocate memory for bus_rx_buf");
+		dev_err(fts_data->dev, "failed to allocate memory for bus_rx_buf");
 		return -ENOMEM;
 	}
 
 	ts_data->dummy_byte = SPI_DUMMY_BYTE;
-	FTS_FUNC_EXIT();
+
 	return 0;
 }
 
 int fts_bus_exit(struct fts_ts_data *ts_data)
 {
-	FTS_FUNC_ENTER();
 	if (ts_data && ts_data->bus_tx_buf) {
 		kfree(ts_data->bus_tx_buf);
 		ts_data->bus_tx_buf = NULL;
@@ -445,6 +443,6 @@ int fts_bus_exit(struct fts_ts_data *ts_data)
 		kfree(ts_data->bus_rx_buf);
 		ts_data->bus_rx_buf = NULL;
 	}
-	FTS_FUNC_EXIT();
+
 	return 0;
 }
