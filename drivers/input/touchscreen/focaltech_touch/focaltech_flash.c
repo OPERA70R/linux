@@ -121,7 +121,7 @@ static int fts_check_bootid(void)
 
 static int fts_fwupg_hardware_reset_to_boot(void)
 {
-    fts_reset_proc(fts_data,0);
+    fts_request_handle_reset(fts_data, 0);
     return 0;
 }
 

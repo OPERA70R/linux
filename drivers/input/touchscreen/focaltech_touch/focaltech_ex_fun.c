@@ -167,7 +167,7 @@ static ssize_t fts_debug_write(
             tmp[buflen - 1] = '\0';
             if (strncmp(tmp, "focal_driver", 12) == 0) {
                 dev_info(ts_data->dev, "APK execute HW Reset");
-                fts_reset_proc(ts_data,0);
+                fts_request_handle_reset(ts_data, 0);
             }
         }
         break;
@@ -431,7 +431,7 @@ static ssize_t fts_hw_reset_show(
     ssize_t count = 0;
 
     mutex_lock(&input_dev->mutex);
-    fts_reset_proc(ts_data,0);
+    fts_request_handle_reset(ts_data, 0);
     count = snprintf(buf, PAGE_SIZE, "hw reset executed\n");
     mutex_unlock(&input_dev->mutex);
 
@@ -860,7 +860,7 @@ static ssize_t fts_driverinfo_show(
 
     count += snprintf(buf + count, PAGE_SIZE,
                       "reset gpio:%d,int gpio:%d,irq:%d\n",
-                      pdata->reset_gpio, pdata->irq_gpio, ts_data->irq);
+                      ts_data->reset_gpio, pdata->irq_gpio, ts_data->irq);
 
     count += snprintf(buf + count, PAGE_SIZE, "IC ID:0x%02x%02x\n",
                       ts_data->ic_info.ids.chip_idh,

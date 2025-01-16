@@ -124,8 +124,6 @@ struct ftxxxx_proc {
 struct fts_ts_platform_data {
 	u32 irq_gpio;
 	u32 irq_gpio_flags;
-	u32 reset_gpio;
-	u32 reset_gpio_flags;
 	bool have_key;
 	u32 key_number;
 	u32 keys[FTS_MAX_KEYS];
@@ -216,11 +214,6 @@ struct fts_ts_data {
 	struct fts_fod_info fod_info;
 	struct regulator_bulk_data *supplies;
 	struct gpio_desc *reset_gpio;
-	#if defined(CONFIG_FB) || defined(CONFIG_DRM)
-	struct notifier_block fb_notif;
-	#elif defined(CONFIG_HAS_EARLYSUSPEND)
-	struct early_suspend early_suspend;
-	#endif
 };
 
 enum _FTS_BUS_TYPE {
@@ -286,7 +279,7 @@ int fts_upgrade_bin(char *fw_name, bool force);
 int fts_enter_test_environment(bool test_state);
 
 /* Other */
-int fts_reset_proc(struct fts_ts_data *ts_data,int hdelayms);
+int fts_request_handle_reset(struct fts_ts_data *ts_data,int hdelayms);
 int fts_check_cid(struct fts_ts_data *ts_data, u8 id_h);
 int fts_wait_tp_to_valid(void);
 void fts_release_all_finger(void);
