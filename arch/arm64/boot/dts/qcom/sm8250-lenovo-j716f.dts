@@ -588,7 +588,33 @@
 	clock-frequency = <400000>;
 	status = "okay";
 
-	/* GT7385P touchscreen @ 5d */
+	goodix-gt738x@5d {
+		compatible = "goodix,gt738x";
+		reg = <0x5d>;
+
+		goodix,reset-gpio = <&tlmm 38 0>;
+		goodix,irq-gpio = <&tlmm 39 0x2008>;
+		goodix,irq-flags = <0x2>;
+		goodix,panel-max-x = <2560>;
+		goodix,panel-max-y = <1600>;
+		goodix,panel-max-w = <2368>;
+		goodix,vdd-name = "vdd";
+		goodix,avdd-name = "avdd";
+		goodix,vddio-name = "vddio";
+		goodix,swap-axis = <1>;
+		goodix,x2x = <1>;
+
+		vdd-supply = <&vreg_l1c_1p8>;
+		vddio-supply = <&vreg_l14a_1p88>;
+		avdd-supply = <&vreg_l13a_3p0>;
+
+		pinctrl-names = "ts_active", "ts_sleep", "ts_release";
+		pinctrl-0 = <&ts_active>;
+		pinctrl-1 = <&ts_int_sleep &ts_reset_sleep>;
+		pinctrl-2 = <&ts_release>;
+
+		panel = <&panel>;
+	};
 };
 
 &i2c15 {
@@ -833,6 +859,34 @@
 		drive-strength = <8>;
 		bias-disable;
 		output-high;
+	};
+
+	ts_active: ts-active-state {
+		pins = "gpio38", "gpio39";
+		function = "gpio";
+		drive-strength = <8>;
+		bias-pull-up;
+	};
+
+	ts_int_sleep: ts-int-sleep-state {
+		pins = "gpio39";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-down;
+	};
+
+	ts_reset_sleep: ts-reset-sleep-state {
+		pins = "gpio38";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-down;
+	};
+
+	ts_release: ts-release-state {
+		pins = "gpio38", "gpio39";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-disable;
 	};
 };
 
