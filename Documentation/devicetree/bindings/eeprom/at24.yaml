@@ -132,6 +132,7 @@ properties:
       - items:
           - const: onnn,n24s64b
           - const: puya,p24c64f
+          - const: giantec,gt24p64e
           - const: atmel,24c64
       - items:
           - enum:

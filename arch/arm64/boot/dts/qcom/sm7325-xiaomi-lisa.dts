@@ -85,6 +85,8 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 
+		orientation-gpios = <&tlmm 140 GPIO_ACTIVE_HIGH>;
+
 		connector@0 {
 			compatible = "usb-c-connector";
 			reg = <0>;
@@ -103,8 +105,8 @@
 					};
 				};
 
-				port@1 {
-					reg = <1>;
+				port@2 {
+					reg = <2>;
 
 					pmic_glink_sbu: endpoint {
 						remote-endpoint = <&fsa4480_sbu_mux>;
@@ -646,6 +648,16 @@
 	status = "okay";
 
 	ports {
+		port@2 {
+			csiphy2_ep: endpoint {
+				clock-lanes = <7>;
+				data-lanes = <0 1>;
+				bus-type = <MEDIA_BUS_TYPE_CSI2_DPHY>;
+				remote-endpoint = <&camera_s5k5e9_ep>;
+			};
+		};
+
+		/*
 		port@3 {
 			csiphy3_ep: endpoint {
 				clock-lanes = <7>;
@@ -654,6 +666,7 @@
 				remote-endpoint = <&camera_imx355_ep>;
 			};
 		};
+		*/
 	};
 };
 
@@ -665,8 +678,58 @@
 	status = "okay";
 };
 
+&cci1_i2c0 {
+	vcm: vcm@c {
+		compatible = "dongwoon,dw9800v";
+		reg = <0x0c>;
+		avdd-supply = <&vreg_l5p>;
+	};
+
+	camera@2d {
+		compatible = "samsung,s5k5e9";
+		reg = <0x2d>;
+
+		vio-supply = <&vreg_l5p>;
+		vana-supply = <&vreg_l4p>;
+		vdig-supply = <&vreg_l2p>;
+
+		clocks = <&camcc CAM_CC_MCLK2_CLK>;
+		clock-names = "xvclk";
+		clock-frequency = <19200000>;
+		assigned-clocks = <&camcc CAM_CC_MCLK2_CLK>;
+		assigned-clock-rates = <19200000>;
+
+		reset-gpios = <&tlmm 77 GPIO_ACTIVE_HIGH>;
+		pinctrl-0 = <&cam_mclk2_default>;
+		pinctrl-names = "default";
+
+		orientation = <1>;
+		rotation = <270>;
+
+		lens-focus = <&vcm>;
+
+		port {
+			camera_s5k5e9_ep: endpoint {
+				data-lanes = <0 1>;
+				link-frequencies = /bits/ 64 <480000000>;
+				remote-endpoint = <&csiphy2_ep>;
+			};
+		};
+	};
+
+	eeprom@52 {
+		compatible = "giantec,gt24p64e",
+			     "atmel,24c64";
+		reg = <0x52>;
+		vcc-supply = <&vreg_l5p>; // todo: seems incorrect, only works with always on on all pm8008 regulators
+		read-only;
+	};
+};
+
 &cci1_i2c1 {
-	camera@1a { /* IMX355 (ultrawide) */
+	/* IMX355 * 1a */
+	/*
+	camera@1a {
 		compatible = "mipi-ccs-1.0", "mipi-ccs";
 		reg = <0x1a>;
 
@@ -681,17 +744,22 @@
 		pinctrl-0 = <&cam_mclk3_default>;
 		pinctrl-names = "default";
 
-		orientation = <0>; /* Front facing */
+		orientation = <1>;
 		rotation = <270>;
 
 		port {
 			camera_imx355_ep: endpoint {
-				data-lanes = <1 2 3 4>;
+				data-lanes = <0 1 2 3>;
 				link-frequencies = /bits/ 64 <600000000>;
 				remote-endpoint = <&csiphy3_ep>;
 			};
 		};
 	};
+	*/
+};
+
+&cci2_default {
+	drive-strength = <4>; /* 4 mA */
 };
 
 &cci3_default {
@@ -766,42 +834,49 @@
 				regulator-name = "vreg_l1p";
 				regulator-min-microvolt = <1000000>;
 				regulator-max-microvolt = <1200000>;
+				regulator-always-on;
 			};
 
 			vreg_l2p: ldo2 {
 				regulator-name = "vreg_l2p";
 				regulator-min-microvolt = <950000>;
 				regulator-max-microvolt = <1200000>;
+				regulator-always-on;
 			};
 
 			vreg_l3p: ldo3 {
 				regulator-name = "vreg_l3p";
 				regulator-min-microvolt = <2700000>;
 				regulator-max-microvolt = <3000000>;
+				regulator-always-on;
 			};
 
 			vreg_l4p: ldo4 {
 				regulator-name = "vreg_l4p";
 				regulator-min-microvolt = <2700000>;
 				regulator-max-microvolt = <2900000>;
+				regulator-always-on;
 			};
 
 			vreg_l5p: ldo5 {
 				regulator-name = "vreg_l5p";
 				regulator-min-microvolt = <1700000>;
 				regulator-max-microvolt = <1900000>;
+				regulator-always-on;
 			};
 
 			vreg_l6p: ldo6 {
 				regulator-name = "vreg_l6p";
 				regulator-min-microvolt = <2700000>;
 				regulator-max-microvolt = <2900000>;
+				regulator-always-on;
 			};
 
 			vreg_l7p: ldo7 {
 				regulator-name = "vreg_l7p";
 				regulator-min-microvolt = <2700000>;
 				regulator-max-microvolt = <3000000>;
+				regulator-always-on;
 			};
 		};
 	};
@@ -1214,7 +1289,7 @@
 		};
 	};
 
-	i2s-dai-link {
+	tdm-dai-link {
 		link-name = "TDM Playback";
 
 		cpu {
@@ -1240,7 +1315,7 @@
 		spi-max-frequency = <6000000>;
 
 		interrupt-parent = <&tlmm>;
-		interrupts = <81 0x2800>;
+		interrupts = <81 IRQ_TYPE_LEVEL_LOW>;
 
 		reset-gpios = <&tlmm 105 GPIO_ACTIVE_LOW>;
 
@@ -1372,6 +1447,13 @@
 		pins = "gpio25";
 		function = "gpio";
 		drive-strength = <2>;
+		bias-disable;
+	};
+
+	cam_mclk2_default: cam-mclk2-default-state {
+		pins = "gpio66";
+		function = "cam_mclk";
+		drive-strength = <4>;
 		bias-disable;
 	};
 
