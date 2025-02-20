@@ -77,6 +77,22 @@
 		vin-supply = <&vph_pwr>;
 	};
 
+	panel_avdd: regulator-panel-avdd {
+		compatible = "regulator-fixed";
+
+		regulator-name = "panel_avdd";
+		regulator-min-microvolt = "5500000";
+		regulator-max-microvolt = "5500000";
+		regulator-enable-ramp-delay = <233>;
+		regulator-boot-on;
+
+		pinctrl-0 = <&panel_avdd_default>;
+		pinctrl-names = "default";
+
+		gpio = <&tlmm 61 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
+
 	qca6390-pmu {
 		compatible = "qcom,qca6390-pmu";
 
@@ -586,6 +602,80 @@
 	/* HL6111R wireless charging IC @ 25 */
 };
 
+&mdss {
+	status = "okay";
+};
+
+&mdss_dsi0 {
+	vdda-supply = <&vreg_l9a_1p2>;
+	qcom,dual-dsi-mode;
+	qcom,sync-dual-dsi;
+	qcom,master-dsi;
+
+	status = "okay";
+
+	panel: panel@0 {
+		compatible = "lenovo,j716f-edo-rm69380", "raydium,rm69380";
+		reg = <0>;
+
+		vddio-supply = <&vreg_l14a_1p88>;
+		avdd-supply = <&panel_avdd>;
+		reset-gpios = <&tlmm 75 GPIO_ACTIVE_LOW>;
+
+		pinctrl-0 = <&sde_dsi_active &sde_te_active_sleep>;
+		pinctrl-1 = <&sde_dsi_sleep &sde_te_active_sleep>;
+		pinctrl-names = "default", "sleep";
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@0 {
+				reg = <0>;
+
+				panel_in_0: endpoint {
+					remote-endpoint = <&mdss_dsi0_out>;
+				};
+			};
+
+			port@1 {
+				reg = <1>;
+
+				panel_in_1: endpoint {
+					remote-endpoint = <&mdss_dsi1_out>;
+				};
+			};
+		};
+	};
+};
+
+&mdss_dsi0_out {
+	remote-endpoint = <&panel_in_0>;
+	data-lanes = <0 1 2 3>;
+};
+
+&mdss_dsi0_phy {
+	vdds-supply = <&vreg_l5a_0p88>;
+	status = "okay";
+};
+
+&mdss_dsi1 {
+	vdda-supply = <&vreg_l9a_1p2>;
+	qcom,dual-dsi-mode;
+	qcom,sync-dual-dsi;
+	status = "okay";
+};
+
+&mdss_dsi1_out {
+	remote-endpoint = <&panel_in_1>;
+	data-lanes = <0 1 2 3>;
+};
+
+&mdss_dsi1_phy {
+	vdds-supply = <&vreg_l5a_0p88>;
+	status = "okay";
+};
+
 &pcie0 {
 	status = "okay";
 };
@@ -712,6 +802,37 @@
 		drive-strength = <16>;
 		output-low;
 		bias-pull-up;
+	};
+
+	panel_avdd_default: panel-avdd-default-state {
+		pins = "gpio61";
+		function = "gpio";
+		drive-strength = <8>;
+		bias-disable;
+		output-high;
+	};
+
+	sde_te_active_sleep: sde-te-active-sleep-state {
+		pins = "gpio66";
+		function = "mdp_vsync";
+		drive-strength = <2>;
+		bias-pull-down;
+	};
+
+	sde_dsi_sleep: sde-dsi-sleep-state {
+		pins = "gpio75";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-down;
+		output-high;
+	};
+
+	sde_dsi_active: sde-dsi-active-state {
+		pins = "gpio75";
+		function = "gpio";
+		drive-strength = <8>;
+		bias-disable;
+		output-high;
 	};
 };
 
