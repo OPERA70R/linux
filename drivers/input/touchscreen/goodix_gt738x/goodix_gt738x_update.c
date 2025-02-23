@@ -302,16 +302,16 @@ static int goodix_check_update(struct goodix_ts_device *dev,
 				fw_ver.pid, fw_info->fw_pid);
 			return -EPERM;
 		}*/
-		ts_info("ic pid:%*ph\n",4,fw_ver.pid);
-		ts_info("fw pid:%*ph\n",8,fw_info->fw_pid);
-		ts_info("pid len:%d\n",dev->reg.pid_len);
+		ts_info("ic pid:%*ph",4,fw_ver.pid);
+		ts_info("fw pid:%*ph",8,fw_info->fw_pid);
+		ts_info("pid len:%d",dev->reg.pid_len);
 		if (memcmp(fw_ver.pid, &(fw_info->fw_pid[4]), dev->reg.pid_len)) {
 			ts_err("Product ID is not match\n");
 			return -EPERM;
 		}
 
-		ts_info("ic vid:%*ph\n",4,fw_ver.vid);
-		ts_info("fw vid:%*ph\n",4,fw_info->fw_vid);
+		ts_info("ic vid:%*ph",4,fw_ver.vid);
+		ts_info("fw vid:%*ph",4,fw_info->fw_vid);
 /*
 		for(i =0;i<4;i++)
 			{
