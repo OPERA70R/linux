@@ -516,7 +516,7 @@ static int goodix_ts_convert_0x_data(const u8 *buf, int buf_size,
 	}
 
 	if (m_size <= 1) {
-		ts_err("cfg file ERROR, valid data count:%d\n", m_size);
+		ts_err("cfg file ERROR, valid data count:%d", m_size);
 		return -EINVAL;
 	}
 	*out_buf_len = m_size;
@@ -527,7 +527,7 @@ static int goodix_ts_convert_0x_data(const u8 *buf, int buf_size,
 
 		if (temp_index >= m_size) {
 			ts_err("exchange cfg data error, overflow,"
-			       "temp_index:%d,m_size:%d\n",
+			       "temp_index:%d,m_size:%d",
 			       temp_index, m_size);
 			return -EINVAL;
 		}
@@ -1938,7 +1938,7 @@ static int goodix_generic_noti_callback(struct notifier_block *self,
 		if (r < 0)
 			ts_info("failed read fw version info");
 		else{
-			ts_info("mela ic vid:%*ph\n",4,ts_dev->chip_version.vid);
+			ts_info("mela ic vid:%*ph",4,ts_dev->chip_version.vid);
 			for(i=0;i<4;i++){
 				//sprintf(tempchar,"%02x",ts_dev->chip_version.vid[i]);
 				ts_info("tempchar %s",&tempchar);
