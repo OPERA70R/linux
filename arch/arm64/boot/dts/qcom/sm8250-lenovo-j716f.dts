@@ -8,6 +8,8 @@
 #include <dt-bindings/arm/qcom,ids.h>
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/regulator/qcom,rpmh-regulator.h>
+#include <dt-bindings/sound/qcom,q6afe.h>
+#include <dt-bindings/sound/qcom,q6asm.h>
 #include "sm8250.dtsi"
 #include "pm8009.dtsi"
 #include "pm8150.dtsi"
@@ -29,6 +31,7 @@
 	qcom,board-id = <0x2010008 0>;
 
 	aliases {
+		mmc0 = &sdhc_2;
 		serial0 = &uart6;
 	};
 
@@ -381,6 +384,8 @@
 			regulator-allow-set-load;
 			regulator-allowed-modes = <RPMH_REGULATOR_MODE_LPM
 						   RPMH_REGULATOR_MODE_HPM>;
+			/* Broken hw, this one can't be turned off or SDHCI will break! */
+			regulator-always-on;
 		};
 
 		vreg_l7c_2p85: ldo7 {
@@ -405,6 +410,8 @@
 			regulator-allow-set-load;
 			regulator-allowed-modes = <RPMH_REGULATOR_MODE_LPM
 						   RPMH_REGULATOR_MODE_HPM>;
+			/* Broken hw, this one can't be turned off or SDHCI will break! */
+			regulator-always-on;
 		};
 
 		vreg_l10c_3p3: ldo10 {
@@ -561,7 +568,25 @@
 	status = "okay";
 
 	/* onsemi NB7VPQ904M USB redriver @ 19 */
-	/* CS35L41 audio amp @ 40 */
+
+	cs35l41: speaker-amp@40 {
+		compatible = "cirrus,cs35l41";
+		reg = <0x40>;
+		VA-supply = <&vreg_l16a_3p3>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <67 IRQ_TYPE_LEVEL_LOW>;
+		reset-gpios = <&tlmm 131 GPIO_ACTIVE_HIGH>;
+		cirrus,boost-type = <0>;
+		cirrus,boost-peak-milliamp = <3500>;
+		cirrus,boost-ind-nanohenry = <1000>;
+		cirrus,boost-cap-microfarad = <15>;
+		cirrus,asp-sdout-hiz = <3>;
+		cirrus,gpio2-src-select = <4>;
+		cirrus,gpio2-output-enable;
+		sound-name-prefix = "SPK1";
+		#sound-dai-cells = <1>;
+	};
+
 	/* CS35L41 audio amp @ 41 */
 	/* CS35L41 audio amp @ 42 */
 	/* CS35L41 audio amp @ 43 */
@@ -760,6 +785,19 @@
 	status = "okay";
 };
 
+&q6afedai {
+	dai@16 {
+		reg = <PRIMARY_MI2S_RX>;
+		qcom,sd-lines = <1>;
+	};
+};
+
+&q6asmdai {
+	dai@0 {
+		reg = <0>;
+	};
+};
+
 &sdhc_2 {
 	cd-gpios = <&tlmm 77 GPIO_ACTIVE_HIGH>;
 	pinctrl-names = "default", "sleep";
@@ -775,6 +813,37 @@
 &slpi {
 	firmware-name = "qcom/sm8250/LENOVO/J716F/slpi.mbn";
 	status = "okay";
+};
+
+&sound {
+	compatible = "qcom,sm8250-sndcard";
+	model = "Lenovo Xiaoxin Pad Pro 2021";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pri_mi2s_active>;
+
+	mm1-dai-link {
+		link-name = "MultiMedia1";
+
+		cpu {
+			sound-dai = <&q6asmdai MSM_FRONTEND_DAI_MULTIMEDIA1>;
+		};
+	};
+
+	i2s-dai-link {
+		link-name = "Primary MI2S Playback";
+
+		cpu {
+			sound-dai = <&q6afedai PRIMARY_MI2S_RX>;
+		};
+
+		platform {
+			sound-dai = <&q6routing>;
+		};
+
+		codec {
+			sound-dai = <&cs35l41 0>;
+		};
+	};
 };
 
 &tlmm {
