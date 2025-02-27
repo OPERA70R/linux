@@ -569,14 +569,16 @@
 
 	/* onsemi NB7VPQ904M USB redriver @ 19 */
 
-	cs35l41: speaker-amp@40 {
+	cs35l41_1: speaker-amp@40 {
 		compatible = "cirrus,cs35l41";
 		reg = <0x40>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&cs35l41_1_irq_default>;
 		VA-supply = <&vreg_l16a_3p3>;
 		interrupt-parent = <&tlmm>;
 		interrupts = <67 IRQ_TYPE_LEVEL_LOW>;
 		reset-gpios = <&tlmm 131 GPIO_ACTIVE_HIGH>;
-		cirrus,boost-type = <0>;
+		cirrus,boost-type = <2>;
 		cirrus,boost-peak-milliamp = <3500>;
 		cirrus,boost-ind-nanohenry = <1000>;
 		cirrus,boost-cap-microfarad = <15>;
@@ -587,9 +589,65 @@
 		#sound-dai-cells = <1>;
 	};
 
-	/* CS35L41 audio amp @ 41 */
-	/* CS35L41 audio amp @ 42 */
-	/* CS35L41 audio amp @ 43 */
+	cs35l41_2: speaker-amp@41 {
+		compatible = "cirrus,cs35l41";
+		reg = <0x41>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&cs35l41_2_irq_default>;
+		VA-supply = <&vreg_l16a_3p3>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <113 IRQ_TYPE_LEVEL_LOW>;
+		reset-gpios = <&tlmm 131 GPIO_ACTIVE_HIGH>;
+		cirrus,boost-type = <2>;
+		cirrus,boost-peak-milliamp = <3500>;
+		cirrus,boost-ind-nanohenry = <1000>;
+		cirrus,boost-cap-microfarad = <15>;
+		cirrus,asp-sdout-hiz = <3>;
+		cirrus,gpio2-src-select = <4>;
+		cirrus,gpio2-output-enable;
+		sound-name-prefix = "SPK2";
+		#sound-dai-cells = <1>;
+	};
+
+	cs35l41_3: speaker-amp@42 {
+		compatible = "cirrus,cs35l41";
+		reg = <0x42>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&cs35l41_3_irq_default>;
+		VA-supply = <&vreg_l16a_3p3>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <126 IRQ_TYPE_LEVEL_LOW>;
+		reset-gpios = <&tlmm 131 GPIO_ACTIVE_HIGH>;
+		cirrus,boost-type = <2>;
+		cirrus,boost-peak-milliamp = <3500>;
+		cirrus,boost-ind-nanohenry = <1000>;
+		cirrus,boost-cap-microfarad = <15>;
+		cirrus,asp-sdout-hiz = <3>;
+		cirrus,gpio2-src-select = <4>;
+		cirrus,gpio2-output-enable;
+		sound-name-prefix = "SPK3";
+		#sound-dai-cells = <1>;
+	};
+
+	cs35l41_4: speaker-amp@43 {
+		compatible = "cirrus,cs35l41";
+		reg = <0x43>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&cs35l41_4_irq_default>;
+		VA-supply = <&vreg_l16a_3p3>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <68 IRQ_TYPE_LEVEL_LOW>;
+		reset-gpios = <&tlmm 131 GPIO_ACTIVE_HIGH>;
+		cirrus,boost-type = <2>;
+		cirrus,boost-peak-milliamp = <3500>;
+		cirrus,boost-ind-nanohenry = <1000>;
+		cirrus,boost-cap-microfarad = <15>;
+		cirrus,asp-sdout-hiz = <3>;
+		cirrus,gpio2-src-select = <4>;
+		cirrus,gpio2-output-enable;
+		sound-name-prefix = "SPK4";
+		#sound-dai-cells = <1>;
+	};
 
 	keyboard@61 {
 		compatible = "hid-over-i2c";
@@ -801,8 +859,8 @@
 &sdhc_2 {
 	cd-gpios = <&tlmm 77 GPIO_ACTIVE_HIGH>;
 	pinctrl-names = "default", "sleep";
-	pinctrl-0 = <&sdc2_default_state &sdc2_gate_pin>;
-	pinctrl-1 = <&sdc2_sleep_state>;
+	pinctrl-0 = <&sdc2_default_state &sdc2_gate>;
+	pinctrl-1 = <&sdc2_sleep_state &sdc2_gate>;
 	vmmc-supply = <&vreg_l9c_2p9>;
 	vqmmc-supply = <&vreg_l6c_2p9>;
 	no-sdio;
@@ -829,7 +887,7 @@
 		};
 	};
 
-	i2s-dai-link {
+	primary-rx-dai-link {
 		link-name = "Primary MI2S Playback";
 
 		cpu {
@@ -841,13 +899,50 @@
 		};
 
 		codec {
-			sound-dai = <&cs35l41 0>;
+			sound-dai = <&cs35l41_1 0>, <&cs35l41_2 0>,
+				    <&cs35l41_3 0>, <&cs35l41_4 0>;
 		};
 	};
 };
 
 &tlmm {
 	gpio-reserved-ranges = <40 4>;
+
+	cs35l41_2_irq_default: cs35l41_2_irq_default {
+		pins = "gpio113";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-up;
+	};
+
+	cs35l41_4_irq_default: cs35l41_4_irq_default {
+		pins = "gpio68";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-up;
+	};
+
+	cs35l41_1_irq_default: cs35l41_1_irq_default {
+		pins = "gpio67";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-up;
+	};
+
+	cs35l41_3_irq_default: cs35l41_3_irq_default {
+		pins = "gpio126";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-up;
+	};
+
+	cs35l41_reset_default: cs35l41_reset_default {
+		pins = "gpio131";
+		function = "gpio";
+		output-high;
+		bias-pull-up;
+		drive-strength = <16>;
+	};
 
 	sdc2_default_state: sdc2-default-state {
 		clk-pins {
@@ -869,7 +964,7 @@
 		};
 	};
 
-	sdc2_gate_pin: sdc2-gate-state {
+	sdc2_gate: sdc2-gate-state {
 		pins = "gpio116";
 		function = "gpio";
 		drive-strength = <2>;
