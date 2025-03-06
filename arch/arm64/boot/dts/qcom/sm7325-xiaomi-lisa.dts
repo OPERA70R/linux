@@ -43,7 +43,7 @@
 		ranges;
 
 		stdout-path = "serial0:115200n8";
-		bootargs = "earlycon clk_ignore_unused pd_ignore_unused console=ttyMSM0 PMOS_NOSPLASH";
+		bootargs = "earlycon console=ttyMSM0,115200 PMOS_NOSPLASH PMOS_NO_OUTPUT_REDIRECT console=tty0";
 
 		framebuffer0: framebuffer@e1000000 {
 			compatible = "simple-framebuffer";
@@ -968,7 +968,7 @@
 	status = "okay";
 
 	panel0: panel@0 {
-		compatible = "mdss,k9d-36-02-0a-dsc";
+		compatible = "csot,vtdr6130";
 		reg = <0>;
 
 		reset-gpios = <&tlmm 44 GPIO_ACTIVE_LOW>;
@@ -1320,7 +1320,7 @@
 		reset-gpios = <&tlmm 105 GPIO_ACTIVE_LOW>;
 
 		avdd-supply = <&vreg_l7c_3p0>;
-		iovdd-supply = <&vreg_l2c_1p8>;
+		vddio-supply = <&vreg_l2c_1p8>;
 
 		touchscreen-size-x = <1080>;
 		touchscreen-size-y = <2400>;
