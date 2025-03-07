@@ -33,8 +33,10 @@
 	chassis-type = "handset";
 
 	aliases {
+		bluetooth0 = &bluetooth;
 		serial0 = &uart5;
 		serial1 = &uart7;
+		wifi0 = &wifi;
 	};
 
 	chosen {
@@ -43,7 +45,7 @@
 		ranges;
 
 		stdout-path = "serial0:115200n8";
-		bootargs = "earlycon console=ttyMSM0,115200 PMOS_NOSPLASH PMOS_NO_OUTPUT_REDIRECT console=tty0";
+		bootargs = "earlycon console=ttyMSM0,115200";
 
 		framebuffer0: framebuffer@e1000000 {
 			compatible = "simple-framebuffer";
@@ -324,7 +326,6 @@
 	};
 
 	// S2B is really ebi.lvl but it's there for supply map completeness sake.
-	/*
 	vreg_s2b_0p7: smpa3-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "vreg_s2b_0p7";
@@ -334,7 +335,6 @@
 		regulator-always-on;
 		vin-supply = <&vph_pwr>;
 	};
-	*/
 };
 
 &apps_rsc {
@@ -342,7 +342,6 @@
 		compatible = "qcom,pm7325-rpmh-regulators";
 		qcom,pmic-id = "b";
 
-		/*
 		vdd-s1-supply = <&vph_pwr>;
 		vdd-s2-supply = <&vph_pwr>;
 		vdd-s7-supply = <&vph_pwr>;
@@ -357,7 +356,6 @@
 		vdd-l11-l17-l18-l19-supply = <&vreg_s1b_1p856>;
 		vdd-l13-supply = <&vreg_s7b_0p952>;
 		vdd-l14-l16-supply = <&vreg_s8b_1p256>;
-		*/
 
 		/*
 		 * S2, L4-L5 are ARCs:
@@ -370,23 +368,27 @@
 
 		vdd19_pmu_rfa_i:
 		vreg_s1b_1p856: smps1 {
+			regulator-name = "vreg_s1b_1p856";
 			regulator-min-microvolt = <1840000>;
 			regulator-max-microvolt = <2040000>;
 		};
 
 		vreg_s7b_0p952: smps7 {
+			regulator-name = "vreg_s7b_0p952";
 			regulator-min-microvolt = <535000>;
 			regulator-max-microvolt = <1120000>;
 		};
 
 		vdd13_pmu_rfa_i:
 		vreg_s8b_1p256: smps8 {
+			regulator-name = "vreg_s8b_1p256";
 			regulator-min-microvolt = <1200000>;
 			regulator-max-microvolt = <1500000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_RET>;
 		};
 
 		vreg_l1b_0p912: ldo1 {
+			regulator-name = "vreg_l1b_0p912";
 			regulator-min-microvolt = <825000>;
 			regulator-max-microvolt = <925000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
@@ -394,12 +396,14 @@
 
 		vdd_a_usbhs_3p1:
 		vreg_l2b_3p072: ldo2 {
+			regulator-name = "vreg_l2b_3p072";
 			regulator-min-microvolt = <2700000>;
 			regulator-max-microvolt = <3544000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 		};
 
 		vreg_l3b_0p6: ldo3 {
+			regulator-name = "vreg_l3b_0p6";
 			regulator-min-microvolt = <312000>;
 			regulator-max-microvolt = <910000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
@@ -408,6 +412,7 @@
 		vdd_a_dsi_0_1p2:
 		vdd_a_ufs_0_1p2:
 		vreg_l6b_1p2: ldo6 {
+			regulator-name = "vreg_l6b_1p2";
 			regulator-min-microvolt = <1140000>;
 			regulator-max-microvolt = <1260000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
@@ -417,6 +422,7 @@
 		};
 
 		vreg_l7b_2p96: ldo7 {
+			regulator-name = "vreg_l7b_2p96";
 			regulator-min-microvolt = <2400000>;
 			regulator-max-microvolt = <3544000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
@@ -426,12 +432,14 @@
 		};
 
 		vreg_l8b_0p904: ldo8 {
+			regulator-name = "vreg_l8b_0p904";
 			regulator-min-microvolt = <870000>;
 			regulator-max-microvolt = <970000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 		};
 
 		vreg_l9b_1p2: ldo9 {
+			regulator-name = "vreg_l9b_1p2";
 			regulator-min-microvolt = <1200000>;
 			regulator-max-microvolt = <1304000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
@@ -441,54 +449,63 @@
 		};
 
 		vreg_l11b_1p776: ldo11 {
+			regulator-name = "vreg_l11b_1p776";
 			regulator-min-microvolt = <1504000>;
 			regulator-max-microvolt = <2000000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 		};
 
 		vreg_l12b_0p8: ldo12 {
+			regulator-name = "vreg_l12b_0p8";
 			regulator-min-microvolt = <751000>;
 			regulator-max-microvolt = <824000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 		};
 
 		vreg_l13b_0p8: ldo13 {
+			regulator-name = "vreg_l13b_0p8";
 			regulator-min-microvolt = <530000>;
 			regulator-max-microvolt = <824000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 		};
 
 		vreg_l14b_1p2: ldo14 {
+			regulator-name = "vreg_l14b_1p2";
 			regulator-min-microvolt = <1080000>;
 			regulator-max-microvolt = <1304000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 		};
 
 		vreg_l15b_0p88: ldo15 {
+			regulator-name = "vreg_l15b_0p88";
 			regulator-min-microvolt = <765000>;
 			regulator-max-microvolt = <1020000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 		};
 
 		vreg_l16b_1p2: ldo16 {
+			regulator-name = "vreg_l16b_1p2";
 			regulator-min-microvolt = <1100000>;
 			regulator-max-microvolt = <1300000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 		};
 
 		vreg_l17b_1p8: ldo17 {
+			regulator-name = "vreg_l17b_1p8";
 			regulator-min-microvolt = <1700000>;
 			regulator-max-microvolt = <1900000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 		};
 
 		vreg_l18b_1p8: ldo18 {
+			regulator-name = "vreg_l18b_1p8";
 			regulator-min-microvolt = <1800000>;
 			regulator-max-microvolt = <2000000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 		};
 
 		vreg_l19b_1p8: ldo19 {
+			regulator-name = "vreg_l19b_1p8";
 			regulator-min-microvolt = <1800000>;
 			regulator-max-microvolt = <2000000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
@@ -499,7 +516,6 @@
 		compatible = "qcom,pm8350c-rpmh-regulators";
 		qcom,pmic-id = "c";
 
-		/*
 		vdd-s1-supply = <&vph_pwr>;
 		vdd-s2-supply = <&vph_pwr>;
 		vdd-s5-supply = <&vph_pwr>;
@@ -509,17 +525,11 @@
 
 		vdd-l1-l12-supply = <&vreg_s1b_1p856>;
 		vdd-l2-l8-supply = <&vreg_s1b_1p856>;
-		*/
-		/*
-		 * Doesn't work :/
-		 * vdd-l3-l4-l5-l7-l13-supply = <&vreg_bob>;
-		 */
-		/*
+		vdd-l3-l4-l5-l7-l13-supply = <&vreg_bob>;
 		vdd-l6-l9-l11-supply = <&vreg_bob>;
 		vdd-l10-supply = <&vreg_s7b_0p952>;
 
 		vdd-bob-supply = <&vph_pwr>;
-		*/
 
 		/*
 		 * S2, S5, S7, S10 are ARCs:
@@ -530,11 +540,13 @@
 		 */
 
 		vreg_s1c_2p2: smps1 {
+			regulator-name = "vreg_s1c_2p2";
 			regulator-min-microvolt = <2190000>;
 			regulator-max-microvolt = <2210000>;
 		};
 
 		vreg_s9c_0p676: smps9 {
+			regulator-name = "vreg_s9c_0p676";
 			regulator-min-microvolt = <1010000>;
 			regulator-max-microvolt = <1170000>;
 		};
@@ -542,51 +554,58 @@
 		vdd_a_usbhs_1p8:
 		vdd_qfprom:
 		vreg_l1c_1p8: ldo1 {
+			regulator-name = "vreg_l1c_1p8";
 			regulator-min-microvolt = <1800000>;
 			regulator-max-microvolt = <1980000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 		};
 
 		vreg_l2c_1p8: ldo2 {
+			regulator-name = "vreg_l2c_1p8";
 			regulator-min-microvolt = <1620000>;
 			regulator-max-microvolt = <1980000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 		};
 
-		/*
+		/* Fingerprint supply, protected by TZ? Would be weird
 		vreg_l3c_3p0: ldo3 {
+			regulator-name = "vreg_l3c_3p0";
 			regulator-min-microvolt = <3300000>;
 			regulator-max-microvolt = <3300000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
-			// regulator-always-on;
 		};
 		*/
 
 		vreg_l4c_1p8_3p0: ldo4 {
+			regulator-name = "vreg_l4c_1p8_3p0";
 			regulator-min-microvolt = <1620000>;
 			regulator-max-microvolt = <3300000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 		};
 
 		vreg_l5c_1p8_3p0: ldo5 {
+			regulator-name = "vreg_l5c_1p8_3p0";
 			regulator-min-microvolt = <1620000>;
 			regulator-max-microvolt = <3300000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 		};
 
 		vreg_l6c_2p96: ldo6 {
+			regulator-name = "vreg_l6c_2p96";
 			regulator-min-microvolt = <1650000>;
 			regulator-max-microvolt = <3544000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 		};
 
 		vreg_l7c_3p0: ldo7 {
+			regulator-name = "vreg_l7c_3p0";
 			regulator-min-microvolt = <3000000>;
 			regulator-max-microvolt = <3544000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 		};
 
 		vreg_l8c_1p8: ldo8 {
+			regulator-name = "vreg_l8c_1p8";
 			regulator-min-microvolt = <1620000>;
 			regulator-max-microvolt = <2000000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
@@ -594,6 +613,7 @@
 		};
 
 		vreg_l9c_2p96: ldo9 {
+			regulator-name = "vreg_l9c_2p96";
 			regulator-min-microvolt = <2700000>;
 			regulator-max-microvolt = <3544000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
@@ -603,7 +623,8 @@
 		vdd_a_dsi_0_pll_0p9:
 		vdd_a_ufs_0_core:
 		vdd_a_usbhs_core:
-		vreg_l10c: ldo10 {
+		vreg_l10c_0p88: ldo10 {
+			regulator-name = "vreg_l10c_0p88";
 			regulator-min-microvolt = <720000>;
 			regulator-max-microvolt = <1050000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
@@ -613,18 +634,21 @@
 		};
 
 		vreg_l11c_2p8: ldo11 {
+			regulator-name = "vreg_l11c_2p8";
 			regulator-min-microvolt = <2800000>;
 			regulator-max-microvolt = <3544000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 		};
 
 		vreg_l12c_1p8: ldo12 {
+			regulator-name = "vreg_l12c_1p8";
 			regulator-min-microvolt = <1650000>;
 			regulator-max-microvolt = <2000000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 		};
 
 		vreg_l13c_3p0: ldo13 {
+			regulator-name = "vreg_l13c_3p0";
 			regulator-min-microvolt = <2700000>;
 			regulator-max-microvolt = <3544000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
@@ -634,6 +658,7 @@
 		vdd_iris_rgb:
 		vdd_mic_bias:
 		vreg_bob: bob {
+			regulator-name = "vreg_bob";
 			regulator-min-microvolt = <3008000>;
 			regulator-max-microvolt = <3960000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_AUTO>;
@@ -642,7 +667,7 @@
 };
 
 &camss {
-	vdda-phy-supply = <&vreg_l10c>;
+	vdda-phy-supply = <&vreg_l10c_0p88>;
 	vdda-pll-supply = <&vreg_l6b_1p2>;
 
 	status = "okay";
@@ -768,9 +793,7 @@
 
 &gcc {
 	protected-clocks = <GCC_CFG_NOC_LPASS_CLK>,
-			   <GCC_EDP_CLKREF_EN>,
 			   <GCC_MSS_CFG_AHB_CLK>,
-			   <GCC_MSS_GPLL0_MAIN_DIV_CLK_SRC>,
 			   <GCC_MSS_OFFLINE_AXI_CLK>,
 			   <GCC_MSS_Q6SS_BOOT_CLK_SRC>,
 			   <GCC_MSS_Q6_MEMNOC_AXI_CLK>,
@@ -1326,7 +1349,6 @@
 		touchscreen-size-y = <2400>;
 	};
 };
-
 
 &tlmm {
 	/*
