@@ -15,12 +15,6 @@
 #include "pm8150.dtsi"
 #include "pm8150l.dtsi"
 
-/*
- * Delete following upstream (sm8250.dtsi) reserved
- * memory mapping which is different on this device.
- */
-/delete-node/ &removed_mem;
-
 / {
 	model = "Lenovo Xiaoxin Pad Pro 2021";
 	compatible = "lenovo,j716f", "qcom,sm8250";
@@ -569,6 +563,7 @@
 
 	/* onsemi NB7VPQ904M USB redriver @ 19 */
 
+	//left-down-speaker
 	cs35l41_1: speaker-amp@40 {
 		compatible = "cirrus,cs35l41";
 		reg = <0x40>;
@@ -578,7 +573,7 @@
 		interrupt-parent = <&tlmm>;
 		interrupts = <67 IRQ_TYPE_LEVEL_LOW>;
 		reset-gpios = <&tlmm 131 GPIO_ACTIVE_HIGH>;
-		cirrus,boost-type = <2>;
+		cirrus,boost-type = <0>;
 		cirrus,boost-peak-milliamp = <3500>;
 		cirrus,boost-ind-nanohenry = <1000>;
 		cirrus,boost-cap-microfarad = <15>;
@@ -589,6 +584,7 @@
 		#sound-dai-cells = <1>;
 	};
 
+	//right-down-speaker
 	cs35l41_2: speaker-amp@41 {
 		compatible = "cirrus,cs35l41";
 		reg = <0x41>;
@@ -598,7 +594,7 @@
 		interrupt-parent = <&tlmm>;
 		interrupts = <113 IRQ_TYPE_LEVEL_LOW>;
 		reset-gpios = <&tlmm 131 GPIO_ACTIVE_HIGH>;
-		cirrus,boost-type = <2>;
+		cirrus,boost-type = <0>;
 		cirrus,boost-peak-milliamp = <3500>;
 		cirrus,boost-ind-nanohenry = <1000>;
 		cirrus,boost-cap-microfarad = <15>;
@@ -609,6 +605,7 @@
 		#sound-dai-cells = <1>;
 	};
 
+	//right-up-speaker
 	cs35l41_3: speaker-amp@42 {
 		compatible = "cirrus,cs35l41";
 		reg = <0x42>;
@@ -618,7 +615,7 @@
 		interrupt-parent = <&tlmm>;
 		interrupts = <126 IRQ_TYPE_LEVEL_LOW>;
 		reset-gpios = <&tlmm 131 GPIO_ACTIVE_HIGH>;
-		cirrus,boost-type = <2>;
+		cirrus,boost-type = <0>;
 		cirrus,boost-peak-milliamp = <3500>;
 		cirrus,boost-ind-nanohenry = <1000>;
 		cirrus,boost-cap-microfarad = <15>;
@@ -629,6 +626,7 @@
 		#sound-dai-cells = <1>;
 	};
 
+	//left-up-speaker
 	cs35l41_4: speaker-amp@43 {
 		compatible = "cirrus,cs35l41";
 		reg = <0x43>;
@@ -638,7 +636,7 @@
 		interrupt-parent = <&tlmm>;
 		interrupts = <68 IRQ_TYPE_LEVEL_LOW>;
 		reset-gpios = <&tlmm 131 GPIO_ACTIVE_HIGH>;
-		cirrus,boost-type = <2>;
+		cirrus,boost-type = <0>;
 		cirrus,boost-peak-milliamp = <3500>;
 		cirrus,boost-ind-nanohenry = <1000>;
 		cirrus,boost-cap-microfarad = <15>;
