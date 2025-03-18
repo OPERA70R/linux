@@ -1498,10 +1498,19 @@ static int imx355_identify_module(struct imx355 *imx355)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(&imx355->sd);
 	int ret;
-	u32 val;
+	u32 val, i;
 
-	ret = imx355_read_reg(imx355, IMX355_REG_CHIP_ID, 2, &val);
-	if (ret)
+	for(i = 0; i < 5; i++)
+	{
+		ret = imx355_read_reg(imx355, IMX355_REG_CHIP_ID, 2, &val);
+		if (ret)
+			continue;
+
+		dev_info(&client->dev, "Retry: %d", i);
+		break;
+	}
+
+	if(ret)
 		return ret;
 
 	if (val != IMX355_CHIP_ID) {

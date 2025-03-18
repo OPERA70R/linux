@@ -688,6 +688,15 @@ config VIDEO_S5C73M3
 	  This is a V4L2 sensor driver for Samsung S5C73M3
 	  8 Mpixel camera.
 
+config VIDEO_S5K3T2
+	tristate "Samsung S5K3T2 sensor support"
+	help
+	  This is a V4L2 sensor driver for Samsung S5K3T2 raw
+	  camera sensor.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called s5k3t2.
+
 config VIDEO_S5K5BAF
 	tristate "Samsung S5K5BAF sensor support"
 	help
