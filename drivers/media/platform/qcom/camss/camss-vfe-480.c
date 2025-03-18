@@ -493,6 +493,19 @@ static void vfe_subdev_init(struct device *dev, struct vfe_device *vfe)
 	vfe->video_ops = vfe_video_ops_480;
 }
 
+static size_t vfe_dump_regs(struct vfe_device *vfe, char *buf, size_t buf_len)
+{
+	size_t len = 0;
+	int i;
+
+	len += scnprintf(buf + len, buf_len - len, "VFE_IRQ_STATUS(0) 0x%08x\n",
+			 readl_relaxed(vfe->base + VFE_IRQ_STATUS(0)));
+	len += scnprintf(buf + len, buf_len - len, "VFE_BUS_IRQ_STATUS(0) 0x%08x\n",
+			readl_relaxed(vfe->base + VFE_BUS_IRQ_STATUS(0)));
+
+	return len;
+}
+
 const struct vfe_hw_ops vfe_ops_480 = {
 	.global_reset = vfe_global_reset,
 	.hw_version = vfe_hw_version,
@@ -504,4 +517,5 @@ const struct vfe_hw_ops vfe_ops_480 = {
 	.vfe_enable = vfe_enable,
 	.vfe_halt = vfe_halt,
 	.vfe_wm_stop = vfe_wm_stop,
+	.dump_regs = vfe_dump_regs,
 };
