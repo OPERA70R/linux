@@ -21,15 +21,15 @@ jobs:
         export ARCH=arm64
         export CROSS_COMPILE=aarch64-linux-gnu-
         make sm8250_defconfig sm8250.config
-        make ARCH=arm64 -j$(nproc) Image dtbs modules
+        make ARCH=arm64 -j$(nproc)
     - name: Create Artifact Directory
       run: mkdir -p artifacts
 
     - name: Copy Artifacts
       run: |
         cp arch/arm64/boot/Image artifacts/
-        find arch/arm64/boot/dts -name '*.dtb' -exec cp {} artifacts/ \;
-        find . -name '*.ko' -exec cp --parents {} artifacts/ \;
+        #find arch/arm64/boot/dts -name '*.dtb' -exec cp {} artifacts/ \;
+        #find . -name '*.ko' -exec cp --parents {} artifacts/ \;
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
