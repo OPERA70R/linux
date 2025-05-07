@@ -35,7 +35,7 @@ jobs:
     - name: Copy Artifacts
       run: |
         cp arch/arm64/boot/Image artifacts/
-        cp arch/arm64/boot/dts/*.dtb artifacts/  # Include device tree files
+        #cp arch/arm64/boot/dts/*.dtb artifacts/  # Include device tree files
         cp -r modules_install/lib/modules artifacts/lib/  # Copy modules into proper structure
         cp vmlin* artifacts/
 
